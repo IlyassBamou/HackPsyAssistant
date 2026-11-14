@@ -1,0 +1,24 @@
+[project]
+name = "hackpsyassistant"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "IlyassBamou", email = "ilyass.bamou@polytechnique.edu" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "datasets>=5.2.0",
+    "huggingface-hub>=2.4.0",
+    "numpy>=2.5.4",
+    "pip>=26.3",
+    "torch>=2.15.0",
+    "transformers>=5.23.0",
+]
+
+[project.scripts]
+hackpsyassistant = "hackpsyassistant:main"
+
+[build-system]
+requires = ["uv_build>=0.12.0,<0.13.0"]
+build-backend = "uv_build"
