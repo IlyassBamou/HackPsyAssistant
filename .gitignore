@@ -17,6 +17,12 @@ New-Doc-Plugin-IA/
 models/
 checkpoints/
 data/
+!backend/data/
+backend/data/*/*
+!backend/data/patients/
+!backend/data/patients/*.json
+!backend/data/reports/
+!backend/data/reports/*.json
 *.safetensors
 *.bin
 .claude/

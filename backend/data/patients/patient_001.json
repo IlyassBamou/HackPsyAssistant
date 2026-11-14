@@ -1,0 +1,40 @@
+{
+  "patient_id": "patient_001",
+  "fictitious": true,
+  "alias": "Patiente fictive 001",
+  "profile": {
+    "age": 24,
+    "language": "fr",
+    "occupation": "Étudiante en master",
+    "living_situation": "Vit seule en résidence étudiante, à 500 km de sa famille"
+  },
+  "psychiatrist": "Dr Fictif (psychiatre référent)",
+  "followed_since": "2026-09-15",
+  "active_axes": ["anxiety", "mood", "sleep", "isolation", "selfharm"],
+  "doctor_context": "Patiente fictive, 24 ans, étudiante en master. Adressée pour une anxiété liée aux examens et des troubles du sommeil. Suivre l'anxiété, le sommeil, l'humeur et l'isolement ; vigilance sur les idées suicidaires passives déjà rapportées une fois.",
+  "medical_history": {
+    "main_difficulties": ["anxiety", "sleep", "isolation"],
+    "history": [
+      "Épisode anxieux en période d'examens (2024), résolu sans traitement",
+      "Idées suicidaires passives rapportées une fois (2025), sans plan ni passage à l'acte"
+    ],
+    "vulnerability_factors": [
+      "Isolement géographique de la famille",
+      "Forte pression académique",
+      "Tendance à annuler les activités sociales en période de stress"
+    ],
+    "protective_factors": [
+      "Une amie proche avec qui elle échange chaque semaine",
+      "Pratique régulière de la course à pied",
+      "Bonne adhésion au suivi"
+    ],
+    "current_treatment": "Aucun traitement médicamenteux ; suivi psychiatrique mensuel"
+  },
+  "psychiatrist_recommendations": [
+    "Respiration en carré (4-4-4-4) lors des montées d'anxiété",
+    "Horaires de coucher réguliers, pas d'écran une heure avant le coucher",
+    "Maintenir au moins un contact social par semaine",
+    "Reprendre la course à pied deux fois par semaine"
+  ],
+  "safety_protocol": "Signal suicidaire explicite (intention, plan) : alerte immédiate au psychiatre référent et orientation vers le 3114."
+}

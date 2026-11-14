@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from .config import (AXES, EMA_ALPHA, LEVEL_FLOOR, RECOMMENDATIONS, RISK_LEVEL_FLOOR,
+from ..core.config import (AXES, EMA_ALPHA, LEVEL_FLOOR, RECOMMENDATIONS, RISK_LEVEL_FLOOR,
                      SLOPE_THRESHOLD, SLOPE_WINDOW)
 
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 import os
 import shutil
 
-from .config import AXES, RECOMMENDATIONS
+from ..core.config import AXES, RECOMMENDATIONS
 
 MODEL = os.environ.get("HACKPSY_LLM_MODEL", "claude-opus-5-5")
 CLI_MODEL = os.environ.get("HACKPSY_CLI_MODEL", "sonnet")  # sonnet is faster for live chat

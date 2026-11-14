@@ -44,7 +44,7 @@ canvas{max-height:260px}
 <body>
 <header>
   <h1>HackPsy Assistant <small>· clinician-guided companion</small></h1>
-  <small id="meta"></small>
+  <span><select id="patient"></select> <small id="meta"></small></span>
 </header>
 <main>
   <div class="col">
@@ -63,7 +63,7 @@ canvas{max-height:260px}
       <div class="row">
         <button class="ghost" id="demo">▶ Replay demo journey</button>
         <button class="ghost" id="sum">Session summary</button>
-        <button class="ghost" id="reset">New session</button>
+        <button class="ghost" id="reset">New conversation</button>
       </div>
     </div>
     <div class="card"><h2>Summary for the doctor</h2><div id="summary" class="mute">Click “Session summary”.</div></div>
@@ -84,10 +84,10 @@ canvas{max-height:260px}
 <div class="disclaimer">Decision-support prototype, not a medical device. Does not diagnose. In danger call 3114 (FR) / your local emergency number.</div>
 <script>
 const $ = s => document.querySelector(s);
-let sid = null, AXES = {}, active = new Set(), chart = null;
+let pid = null, cid = null, AXES = {}, active = new Set(), chart = null, lastState = null;
 
-async function api(path, body) {
-  const r = await fetch('/api/' + path, body ? {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)} : {});
+async function api(path, body, method) {
+  const r = await fetch('/api/' + path, body || method ? {method: method || 'POST', headers:{'Content-Type':'application/json'}, body: body && JSON.stringify(body)} : {});
   if (!r.ok) throw new Error(await r.text());
   return r.json();
 }
@@ -101,14 +101,18 @@ function renderChips() {
     const c = document.createElement('span');
     c.className = 'chip' + (active.has(k) ? ' on' : ''); c.textContent = v.label;
     if (active.has(k)) c.style.background = v.color;
-    c.onclick = () => { active.has(k) ? active.delete(k) : active.add(k); renderChips(); };
+    c.onclick = async () => {
+      active.has(k) ? active.delete(k) : active.add(k); renderChips();
+      render(await api('patients/' + pid, {axes: [...active]}, 'PATCH'));
+    };
     $('#axisChips').appendChild(c);
   }
 }
 function render(st) {
-  sid = st.session_id;
+  lastState = st;
+  if (st.conversation_id) cid = st.conversation_id;
   const an = st.analysis;
-  $('#meta').textContent = `scorer: ${st.scorer} · session ${sid}`;
+  $('#meta').textContent = `scorer: ${st.scorer}` + (cid ? ` · conversation ${cid}` : '');
   $('#alerts').innerHTML = an.alerts.map(a =>
     `<div class="alert ${a.critical ? 'crit' : ''}"><b>${a.critical ? '⚠ ' : '↗ '}${a.label} is rising</b> (level ${a.level.toFixed(2)}, slope ${a.slope >= 0 ? '+' : ''}${a.slope.toFixed(3)})<br>${a.recommendation}</div>`).join('');
   $('#gauges').innerHTML = Object.entries(an.levels).map(([k, v]) => {
@@ -134,7 +138,7 @@ async function send(text) {
   if (!text.trim()) return;
   add('user', text); $('#input').value = ''; $('#send').disabled = true;
   try {
-    const st = await api('chat', {session_id: sid, message: text, context: $('#context').value, axes: [...active]});
+    const st = await api('chat', {patient_id: pid, conversation_id: cid, message: text});
     add('bot', st.reply); render(st);
   } catch (e) { add('bot', 'Error: ' + e.message); }
   $('#send').disabled = false;
@@ -142,19 +146,34 @@ async function send(text) {
 $('#send').onclick = () => send($('#input').value);
 $('#input').onkeydown = e => { if (e.key === 'Enter') send($('#input').value); };
 $('#sum').onclick = async () => {
-  if (!sid) return; $('#summary').textContent = 'Generating...';
-  $('#summary').textContent = (await api('summary', {session_id: sid})).summary;
+  if (!cid) return; $('#summary').textContent = 'Generating...';
+  $('#summary').textContent = (await api('summary', {patient_id: pid, conversation_id: cid})).summary;
 };
-$('#reset').onclick = () => { sid = null; $('#chat').innerHTML = ''; $('#alerts').innerHTML = ''; $('#gauges').innerHTML = ''; $('#expl').textContent = ''; if (chart) chart.destroy(); $('#summary').textContent = 'Click “Session summary”.'; };
+// New conversation: the patient's history (and trends) is kept, only the chat starts over
+$('#reset').onclick = () => { cid = null; $('#chat').innerHTML = ''; $('#summary').textContent = 'Click “Session summary”.'; render(lastState); };
+$('#context').onchange = () => api('patients/' + pid, {doctor_context: $('#context').value}, 'PATCH');
 $('#demo').onclick = async () => {
-  $('#reset').click(); $('#demo').disabled = true;
-  const d = await api('demo'); $('#context').value = d.context;
+  if (!confirm('Replaying the demo erases the generated history of this fictitious patient. Continue?')) return;
+  $('#demo').disabled = true;
+  cid = null; $('#chat').innerHTML = ''; render(await api('patients/' + pid + '/history', null, 'DELETE'));
+  const d = await api('demo');
   for (const m of d.messages) { await send(m); await new Promise(r => setTimeout(r, 900)); }
   $('#demo').disabled = false;
 };
+async function loadPatient(id) {
+  pid = id; cid = null; $('#chat').innerHTML = '';
+  const st = await api('patients/' + pid);
+  $('#context').value = st.patient.doctor_context || '';
+  active = new Set(Object.keys(st.axes)); renderChips();
+  for (const m of st.recent_messages) add(m.role === 'user' ? 'user' : 'bot', m.content);
+  render(st);
+}
+$('#patient').onchange = () => loadPatient($('#patient').value);
 (async () => {
-  const c = await api('config'); AXES = c.axes; active = new Set(Object.keys(AXES));
-  $('#meta').textContent = `scorer: ${c.scorer} · llm: ${c.llm}`; renderChips();
+  const c = await api('config'); AXES = c.axes;
+  const ps = await api('patients');
+  $('#patient').innerHTML = ps.map(p => `<option value="${p.patient_id}">${p.alias}</option>`).join('');
+  if (ps.length) await loadPatient(ps[0].patient_id);
 })();
 </script>
 </body>

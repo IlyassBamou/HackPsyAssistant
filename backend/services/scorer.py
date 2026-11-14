@@ -11,7 +11,7 @@ import math
 import os
 import re
 
-from .config import AXES
+from ..core.config import AXES
 
 LEXICON: dict[str, dict[str, float]] = {
     "anxiety": {"anxious": 1, "anxiety": 1, "panic": 1, "worried": .8, "worry": .8, "nervous": .8,

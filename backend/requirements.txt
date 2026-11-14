@@ -1,0 +1,5 @@
+# Backend API (MVP: lexicon scorer + Claude)
+fastapi>=0.162.7
+uvicorn[standard]>=0.54.0
+anthropic>=2.8.0
+numpy>=2.5.4

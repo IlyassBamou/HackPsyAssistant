@@ -1,0 +1,48 @@
+[
+  {
+    "report_id": "rpt_001",
+    "date": "2026-09-15",
+    "type": "consultation",
+    "fictitious": true,
+    "author": "Dr Fictif",
+    "title": "Première consultation",
+    "reason": "Anxiété croissante à l'approche des examens de fin de semestre, difficultés d'endormissement.",
+    "observations": [
+      "Discours cohérent, contact de bonne qualité",
+      "Ruminations centrées sur la réussite académique",
+      "Endormissement après 2 h du matin, 3 à 4 nuits par semaine",
+      "Diminution des sorties avec les amis depuis la rentrée"
+    ],
+    "risk_assessment": "Pas d'idéation suicidaire actuelle. Antécédent d'idées suicidaires passives en 2025, sans plan. Facteurs de protection présents.",
+    "plan": [
+      "Apprentissage de la respiration en carré",
+      "Hygiène du sommeil : horaires réguliers, pas d'écran avant le coucher",
+      "Utilisation de l'assistant HackPsy entre les consultations",
+      "Revoir dans un mois"
+    ],
+    "summary": "Anxiété de performance avec retentissement sur le sommeil et début de retrait social. Pas de risque suicidaire actuel identifié."
+  },
+  {
+    "report_id": "rpt_002",
+    "date": "2026-10-20",
+    "type": "consultation",
+    "fictitious": true,
+    "author": "Dr Fictif",
+    "title": "Consultation de suivi",
+    "reason": "Suivi mensuel.",
+    "observations": [
+      "Amélioration partielle de l'endormissement (respiration utilisée quelques soirs)",
+      "Persistance de l'anxiété avant les partiels de décembre",
+      "A annulé deux sorties avec son amie proche ce mois-ci",
+      "Humeur décrite comme « plate » certains jours"
+    ],
+    "risk_assessment": "Pas d'idéation suicidaire exprimée. Surveiller l'isolement et l'humeur à l'approche des examens.",
+    "plan": [
+      "Maintenir au moins un contact social par semaine",
+      "Reprendre la course à pied deux fois par semaine",
+      "Suivi renforcé de l'humeur et de l'isolement via l'assistant",
+      "Revoir dans un mois, plus tôt si alerte"
+    ],
+    "summary": "Évolution mitigée : léger mieux sur le sommeil, mais anxiété et retrait social persistants. Vigilance accrue sur l'humeur avant les examens."
+  }
+]
