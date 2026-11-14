@@ -1,0 +1,727 @@
+# SENTINEL
+## AI-Powered Mental Health Follow-Up Platform
+
+You are acting as a senior software architect, AI engineer and technical mentor. I want you to help me design and build a prototype for a hackathon project called **Sentinel**.
+
+Your first responsibility is to understand the complete product vision, assess its technical feasibility and propose the best implementation strategy given our constraints.
+
+Do not assume that every feature described below must be implemented. I want you to use your technical judgment to determine what is achievable, what should be simplified, and what would make the strongest MVP.
+
+We have approximately **1.5 days (36 hours)** to develop and present the prototype.
+
+---
+
+# 1. PRODUCT VISION
+
+We want to build an AI-powered mental-health follow-up platform connecting patients with their psychiatrists between clinical consultations.
+
+The idea is to extend the relationship between a psychiatrist and a patient beyond their occasional appointments.
+
+Imagine the following situation:
+
+A person is already being followed by a psychiatrist. During a consultation, the psychiatrist suggests that the patient use our platform to communicate regularly with an AI companion between appointments.
+
+The psychiatrist creates a patient profile and provides relevant context about the individual.
+
+This context could include:
+
+- General information relevant to the patient's follow-up.
+- Difficulties or symptoms currently being monitored.
+- The psychiatrist's observations.
+- Areas of concern.
+- Therapeutic objectives.
+- Particular indicators that should be monitored.
+- Activities or exercises recommended by the psychiatrist.
+- Other relevant information that helps interpret the patient's conversations.
+
+The patient then interacts with an AI companion through our platform, potentially on a daily basis.
+
+The AI provides supportive conversations, encourages reflection and may suggest appropriate activities.
+
+Meanwhile, Sentinel analyzes the conversations over time.
+
+It extracts relevant mental-health signals, tracks their evolution and provides the psychiatrist with structured reports and alerts when concerning situations emerge.
+
+**The central idea is to transform everyday conversations into structured, contextualized and longitudinal insights that help psychiatrists better understand their patients between consultations.**
+
+This is NOT intended to replace psychiatrists, diagnose mental disorders or make autonomous clinical decisions.
+
+The psychiatrist remains responsible for clinical assessment and care.
+
+---
+
+# 2. THE THREE MAIN COMPONENTS OF THE PLATFORM
+
+The product has three main components.
+
+## A. Psychiatrist Interface
+
+The psychiatrist should be able to:
+
+1. Create a patient profile.
+2. Enter or upload information about the patient.
+3. Define monitoring objectives.
+4. Specify particular indicators they want Sentinel to follow.
+5. Configure therapeutic objectives and recommended activities.
+6. Review patient conversations or relevant excerpts, according to the consent and access model.
+7. Receive daily or weekly reports.
+8. Receive alerts when predefined concerning situations emerge.
+9. Visualize the evolution of monitored indicators over time.
+10. Review the evidence behind every AI-generated observation.
+
+The psychiatrist-provided context is particularly important.
+
+I do NOT want it to be treated merely as a long prompt sent to the chatbot.
+
+Ideally, it should be a structured component of the system, stored in the database and accessible to the relevant analytical components.
+
+For example, a psychiatrist might create this patient context:
+
+"Patient is experiencing depressive symptoms, social isolation and difficulties maintaining daily routines. We want to monitor emotional distress, sleep-related difficulties, social interactions and expressions of hopelessness. The patient is also working on gradually increasing social interactions."
+
+The system should use this context to interpret conversations and compare observations with the patient's individual monitoring objectives.
+
+The context should ideally be versioned, so that changes made by the psychiatrist can be tracked over time.
+
+## B. Patient Interface
+
+The patient interacts with an AI companion.
+
+The AI should:
+
+- Encourage the patient to express their feelings.
+- Ask appropriate follow-up questions.
+- Help the patient reflect on their day.
+- Encourage healthy routines.
+- Suggest simple and appropriate activities.
+- Support the patient's therapeutic objectives.
+- Maintain a supportive, empathetic and non-judgmental tone.
+
+Example:
+
+Patient:
+"I didn't leave my room today. I didn't feel like talking to anyone."
+
+AI:
+"I'm sorry today was difficult. Has this been happening frequently recently, or was today particularly difficult?"
+
+The AI should not attempt to diagnose the patient or independently prescribe treatments.
+
+Activity suggestions should respect the psychiatrist's instructions and predefined safety boundaries.
+
+There should be a distinction between:
+
+- Activities explicitly recommended or approved by the psychiatrist.
+- General, low-risk supportive suggestions that the AI can make independently within predefined boundaries.
+
+## C. Intelligence and Monitoring Layer
+
+This is the technical heart of Sentinel.
+
+The platform should analyze patient conversations and transform them into structured observations.
+
+There are two levels of analysis.
+
+### Level 1: Individual Message and Conversation Analysis
+
+We want to extract multiple signals from conversations.
+
+A single message can contain several signals simultaneously.
+
+For example:
+
+"I haven't been sleeping, I don't want to see my friends anymore, and I feel completely useless."
+
+Potential observations:
+
+- Sleep difficulties.
+- Social isolation.
+- Worthlessness.
+- Emotional distress.
+
+This is why I am interested in a **multi-label classification approach**, rather than a simple single-class classifier.
+
+Potential categories include:
+
+| Category | Description |
+|---|---|
+| Emotional distress | Sadness, anxiety, anger or other difficult emotional states. |
+| Hopelessness | Expressions of hopelessness or helplessness. |
+| Social isolation | Withdrawal from social interactions. |
+| Sleep difficulties | Reported sleep problems or irregularities. |
+| Motivation | Changes in motivation or interest. |
+| Worthlessness | Negative self-perception or feelings of worthlessness. |
+| Suicidal ideation | Expressions of suicidal thoughts. |
+| Suicidal intent | Statements potentially indicating intent. |
+| Planning signals | Statements potentially indicating preparation or planning. |
+| Protective factors | Support systems, positive activities and reasons for living. |
+
+These are linguistic observations, not clinical diagnoses.
+
+The model should also distinguish:
+
+- First-person disclosures.
+- Third-person descriptions.
+- Academic discussions.
+- Fictional conversations.
+- Quoted statements.
+- Negation.
+- Ambiguous expressions.
+
+For example, a patient discussing suicide in an academic context should not automatically trigger the same interpretation as someone describing personal suicidal thoughts.
+
+The system should preserve uncertainty rather than force every message into a definitive category.
+
+### Level 2: Longitudinal Analysis
+
+This is one of the most important aspects of our product.
+
+We do not want to analyze only the latest message.
+
+We want to understand how the patient's situation evolves across days and weeks.
+
+For example:
+
+| Indicator | Monday | Wednesday | Friday | Evolution |
+|---|---|---|---|---|
+| Emotional distress | Moderate | High | High | Increasing |
+| Social isolation | Low | Moderate | High | Increasing |
+| Motivation | High | Moderate | Low | Decreasing |
+| Hopelessness | None detected | Mild | Moderate | Emerging |
+
+The platform should identify:
+
+- Recurring patterns.
+- New signals.
+- Increasing or decreasing indicators.
+- Significant changes compared with previous periods.
+- Potential improvements.
+- Contradictions between observations.
+- Differences between the patient's current situation and their initial context.
+
+An important example:
+
+A patient initially reports that they are feeling better. However, over the following three weeks, their conversations increasingly mention social withdrawal and loss of motivation.
+
+The platform should identify this evolution and make it visible to the psychiatrist.
+
+These trends are monitoring indicators, not clinically validated predictions of suicide risk or deterioration.
+
+---
+
+# 3. PROPOSED AI ARCHITECTURE: MULTI-AGENT SYSTEM
+
+I am interested in a multi-agent architecture.
+
+However, I do not want to introduce agents simply for the sake of having many agents.
+
+Each component should have a clear responsibility and produce structured outputs.
+
+Here is the architecture I have in mind. You are free to simplify or improve it.
+
+| Component | Responsibility |
+|---|---|
+| Patient Context Agent | Understands the psychiatrist-provided context and monitoring objectives. |
+| Emotion Analysis Agent | Identifies emotional states and their evolution. |
+| Mental Health Signals Agent | Detects relevant signals such as hopelessness, isolation, worthlessness and suicidal ideation. |
+| Behavioral Analysis Agent | Monitors reported sleep, motivation, routines and social interactions. |
+| Temporal Analysis Agent | Compares observations across conversations and identifies changes over time. |
+| Activity Recommendation Agent | Suggests suitable activities within psychiatrist-defined boundaries. |
+| Safety Agent | Identifies potentially urgent situations and activates predefined safety procedures. |
+| Judge Agent | Aggregates findings, handles disagreement and produces reports or alerts. |
+
+### Important architectural preference
+
+I do not necessarily expect eight independent LLMs.
+
+I would prefer a practical architecture where several analytical components share the same underlying NLP model.
+
+For example:
+
+- A shared pretrained NLP model extracts relevant signals.
+- Python modules process temporal information.
+- Structured rules identify predefined safety conditions.
+- A Judge component aggregates the results.
+
+The Judge does not necessarily need to be an LLM. A deterministic Python implementation may be more reliable and achievable for the MVP.
+
+A potentially concerning safety signal must never be dismissed simply because other components disagree.
+
+Every important output should ideally include:
+
+- The observation.
+- The category.
+- The source message.
+- The timestamp.
+- The confidence or uncertainty.
+- The relevant patient context.
+- The reason why the observation matters.
+
+---
+
+# 4. MODEL STRATEGY
+
+I am particularly interested in using a pretrained model for mental-health-related text classification.
+
+Some models and approaches worth investigating:
+
+- MentalBERT.
+- MentalRoBERTa.
+- RoBERTa-base.
+- Other publicly available mental-health text classification checkpoints.
+
+I previously considered using a multi-label classifier with a shared encoder and a classification head.
+
+The idea is to obtain several probabilities for each message rather than one exclusive class.
+
+For example:
+
+```python
+{
+    "emotional_distress": 0.87,
+    "social_isolation": 0.92,
+    "hopelessness": 0.65,
+    "suicidal_ideation": 0.12,
+    "protective_factor": 0.05
+}
+```
+
+These numbers are illustrative, not calibrated clinical probabilities.
+
+I want you to investigate whether we should:
+
+1. Use an existing fine-tuned classifier.
+2. Use a pretrained encoder and fine-tune it.
+3. Start with a simpler model or hybrid NLP approach.
+4. Combine a classifier with deterministic rules.
+
+We have only 36 hours, so I do not want to spend most of the hackathon training a model.
+
+Please consider:
+
+- Whether model checkpoints are actually available.
+- Their licenses and access restrictions.
+- Whether they are pretrained encoders or already fine-tuned classifiers.
+- CPU inference performance.
+- Whether fine-tuning is realistic with the available data.
+- Whether the available datasets match our proposed labels.
+- The time required to integrate and evaluate each option.
+
+Potential datasets to investigate include publicly available research resources such as CLPsych shared-task datasets, UMD Reddit Suicidality Dataset and Dreaddit.
+
+Check their availability, licensing and suitability before recommending them.
+
+Do not assume that subreddit membership or synthetic labels represent clinical ground truth.
+
+For the hackathon, synthetic conversations can be used to demonstrate longitudinal behavior, but we must distinguish demonstration results from actual model validation.
+
+We have no paid AI APIs or dedicated hackathon compute infrastructure.
+
+Prefer open-source tools and local inference.
+
+---
+
+# 5. MEMORY AND PATIENT HISTORY
+
+The system needs to retain information across conversations.
+
+I want you to consider a memory architecture with three levels:
+
+### Episodic memory
+
+Stores the actual conversation events:
+
+- Patient identifier.
+- Session identifier.
+- Message identifier.
+- Timestamp.
+- Speaker.
+- Message content.
+
+### Semantic memory
+
+Stores structured observations extracted from conversations:
+
+- Observation category.
+- Evidence.
+- Source message identifier.
+- Timestamp.
+- Confidence or uncertainty.
+- Context.
+- Relevant monitoring objective.
+
+### Temporal memory
+
+Stores information about evolution:
+
+- Recurrence of observations.
+- Changes in indicators.
+- Previous reports.
+- Previous alerts.
+- Follow-up history.
+
+For the MVP, SQLite should probably be sufficient.
+
+A vector database is optional. Do not introduce one unless you can justify its necessity.
+
+The system should retrieve relevant historical information rather than repeatedly process the entire conversation history.
+
+---
+
+# 6. WHAT THE PSYCHIATRIST SHOULD RECEIVE
+
+The intelligence layer should produce three main outputs.
+
+## A. Daily Reports
+
+Example:
+
+**Patient 001 — Daily Report**
+
+- Emotional state: Predominantly negative.
+- Main observations: Reported social isolation and reduced motivation.
+- Sleep: Mentioned difficulties sleeping.
+- Positive observations: Mentioned speaking with a family member.
+- Change compared with previous days: Increased expressions of isolation.
+- Safety assessment: No predefined urgent signal detected.
+- Suggested follow-up: Review the evolution of social withdrawal during the next consultation.
+
+The psychiatrist should be able to inspect the original evidence behind each observation.
+
+Reports should distinguish what the patient explicitly said from what the system inferred.
+
+## B. Alerts
+
+Alerts should be generated when predefined concerning conditions emerge.
+
+Examples:
+
+- New expressions of suicidal ideation.
+- Possible indications of intent or planning.
+- Significant changes in several monitored indicators.
+- A concerning combination of observations.
+
+The platform should distinguish levels of urgency and provide the evidence behind the alert.
+
+For the prototype, we can simulate notifications inside the psychiatrist dashboard.
+
+We should not claim that a real psychiatrist has been contacted unless an actual staffed response process exists.
+
+## C. Evolution Dashboard
+
+The psychiatrist should be able to visualize indicators over time.
+
+Potential visualizations:
+
+- Emotional distress over the last 30 days.
+- Social isolation over the last 30 days.
+- Motivation over the last 30 days.
+- Sleep difficulties over the last 30 days.
+- Changes in reported protective factors.
+- Timeline of important observations and alerts.
+
+The dashboard should make it easy to understand what has changed since the last consultation.
+
+---
+
+# 7. ACTIVITY RECOMMENDATIONS
+
+Another important aspect of the product is that it should not only identify concerning signals.
+
+It should also help patients engage in activities that support their therapeutic objectives.
+
+Examples:
+
+| Observation | Possible supportive activity |
+|---|---|
+| Reduced motivation | Suggest a small, achievable daily task. |
+| Social isolation | Suggest contacting someone they trust. |
+| Irregular routines | Suggest establishing a consistent daily routine. |
+| Reported stress | Suggest a simple relaxation exercise. |
+| Reduced physical activity | Suggest a short walk if appropriate. |
+
+Recommendations should be contextualized using the psychiatrist's instructions.
+
+The system should never independently prescribe treatments or modify clinical objectives.
+
+For the MVP, simple predefined recommendation rules may be enough.
+
+---
+
+# 8. THE END-TO-END PRODUCT WORKFLOW
+
+Here is the complete workflow I envision:
+
+1. A psychiatrist creates a patient profile.
+2. The psychiatrist enters the patient's context.
+3. The psychiatrist defines individual monitoring objectives.
+4. The patient accesses their conversational AI interface.
+5. The patient starts interacting with the AI.
+6. Messages are stored with timestamps and session identifiers.
+7. The NLP system extracts relevant multi-label observations.
+8. The system stores these observations in structured memory.
+9. Historical observations are retrieved.
+10. The Temporal Analysis component identifies changes over time.
+11. The Safety component checks predefined safety conditions.
+12. The Judge aggregates the outputs.
+13. The system generates a daily report.
+14. If appropriate, an alert is created.
+15. The psychiatrist reviews the patient dashboard.
+16. The psychiatrist can acknowledge an alert and record follow-up actions.
+
+This is the complete product vision, not necessarily the implementation scope for the hackathon.
+
+---
+
+# 9. HACKATHON MVP: WHAT WE WANT TO DEMONSTRATE
+
+We have approximately 1.5 days.
+
+Our priority is to produce a convincing, working, end-to-end prototype rather than an overly ambitious architecture with many incomplete components.
+
+I would like to demonstrate the following scenario:
+
+### Step 1 — Psychiatrist creates a patient
+
+The psychiatrist enters a synthetic patient profile and defines monitoring objectives.
+
+### Step 2 — Patient interacts with the AI
+
+The patient has conversations with the AI companion.
+
+We can simulate conversations if implementing a full conversational system is too time-consuming.
+
+### Step 3 — The intelligence layer analyzes conversations
+
+The system extracts structured observations from the messages.
+
+### Step 4 — The system tracks evolution
+
+Observations are stored and compared across several days.
+
+### Step 5 — Reports and alerts are generated
+
+The system creates a daily report and identifies potentially concerning changes.
+
+### Step 6 — Psychiatrist reviews the dashboard
+
+The psychiatrist can visualize the patient's evolution, inspect supporting evidence and acknowledge alerts.
+
+### Suggested demonstration scenarios
+
+I would like to demonstrate three simulated patients:
+
+**Patient A — Gradual improvement**
+
+- Initially experiences emotional distress and reduced motivation.
+- Gradually reports positive changes.
+- Starts mentioning social activities and better routines.
+- The dashboard should show an improving pattern in the monitored observations.
+
+**Patient B — Stable condition with recurring difficulties**
+
+- Frequently reports moderate emotional distress.
+- Experiences recurring sleep difficulties.
+- Shows no significant change over time.
+- The platform should identify recurring patterns without generating unnecessary urgent alerts.
+
+**Patient C — Deterioration**
+
+- Initially reports mild difficulties.
+- Gradually expresses more hopelessness and social isolation.
+- Later makes a concerning statement related to suicidal ideation.
+- The system should detect the relevant signals, preserve the evidence and trigger the appropriate simulated alert workflow.
+
+These are synthetic scenarios for demonstrating the architecture. They are not clinical validation.
+
+---
+
+# 10. TECHNICAL CONSTRAINTS
+
+Current environment:
+
+- Python project already initialized using `uv init`.
+- We use VS Code.
+- We use Claude Code for development.
+- No paid AI APIs.
+- No dedicated hackathon GPU or compute infrastructure.
+- Approximately 36 hours remain.
+
+Potential technologies:
+
+| Component | Possible technology |
+|---|---|
+| Language | Python |
+| Dependency management | uv |
+| NLP | PyTorch, Hugging Face Transformers |
+| Data validation | Pydantic |
+| Backend | FastAPI |
+| Database | SQLite, SQLAlchemy |
+| Frontend | Streamlit or another lightweight framework |
+| Visualization | Plotly |
+| Testing | pytest |
+| Data processing | pandas, scikit-learn |
+
+These are suggestions, not mandatory choices.
+
+Choose the simplest stack that can produce a robust, demonstrable prototype.
+
+Avoid unnecessary infrastructure, microservices, distributed systems and complicated deployment requirements.
+
+---
+
+# 11. IMPORTANT SAFETY AND PRIVACY CONSIDERATIONS
+
+This is a mental-health-related product, so safety must influence the architecture.
+
+The platform must:
+
+- Avoid presenting AI outputs as medical diagnoses.
+- Distinguish observations from clinical conclusions.
+- Preserve uncertainty.
+- Provide traceable evidence for important findings.
+- Avoid claiming to predict suicide with certainty.
+- Ensure urgent signals are not suppressed by majority voting.
+- Define what happens when an urgent signal is detected.
+- Keep a human professional responsible for clinical decisions.
+
+For the hackathon, use synthetic patient data exclusively.
+
+A real deployment would require appropriate patient consent, GDPR-compliant processing, secure access controls, data-retention policies, clinical safety assessment and a reliable human escalation process.
+
+---
+
+# 12. WHAT I EXPECT FROM YOU NOW
+
+I do NOT want you to blindly implement everything described above.
+
+I want you to act as an experienced technical architect and critically assess the project.
+
+Given our 36-hour constraint, determine what is realistically feasible and what would produce the strongest demonstration.
+
+Please structure your response as follows.
+
+## Part 1 — Your understanding of the product
+
+Explain the product in your own words.
+
+Identify its main components, users and value proposition.
+
+Tell me whether you see any gaps or contradictions in the product vision.
+
+## Part 2 — Feasibility assessment
+
+Evaluate every major feature.
+
+Classify each as:
+
+- Essential for the MVP.
+- Useful if time permits.
+- Better postponed until after the hackathon.
+
+Be realistic about implementation time.
+
+## Part 3 — Recommended architecture
+
+Propose the architecture you would actually implement.
+
+Explain:
+
+- Which components should be independent.
+- Which agents should share a model.
+- Which components should use deterministic Python logic.
+- How the patient context should be represented.
+- How conversation history and observations should be stored.
+- How longitudinal analysis should work.
+- How reports and alerts should be generated.
+
+I am open to replacing my proposed multi-agent architecture with a simpler design if it produces a better MVP.
+
+## Part 4 — Detailed project structure
+
+Propose the complete Python project tree.
+
+For each directory and important file, explain its responsibility.
+
+Avoid creating files and abstractions without a clear purpose.
+
+## Part 5 — Database design
+
+Propose the database schema.
+
+At minimum, consider:
+
+- Patients.
+- Patient context and context versions.
+- Monitoring objectives.
+- Conversations.
+- Messages.
+- Extracted observations.
+- Daily reports.
+- Alerts.
+- Alert acknowledgements and follow-up actions.
+- Recommended activities.
+
+Explain the relationships between the entities.
+
+## Part 6 — Model and NLP strategy
+
+Recommend the actual model or approach we should use.
+
+Compare available options based on:
+
+- Integration time.
+- CPU compatibility.
+- Model availability.
+- License.
+- Performance.
+- Label compatibility.
+- Fine-tuning requirements.
+
+Explain whether multi-label classification is realistic with the data and time available.
+
+If a pretrained checkpoint does not fit our needs, propose a fallback.
+
+## Part 7 — MVP implementation roadmap
+
+Give me a realistic implementation plan for the remaining 36 hours.
+
+Prioritize an end-to-end working workflow.
+
+Identify the features we should absolutely avoid implementing if they threaten the demonstration.
+
+## Part 8 — Demo strategy
+
+Explain how you would demonstrate the product to hackathon judges.
+
+Propose a convincing sequence using our three synthetic patients.
+
+Highlight what makes the project technically interesting and different.
+
+## Part 9 — Improvements
+
+Suggest improvements to the original idea.
+
+Challenge my assumptions where appropriate.
+
+In particular, think about how to make the product genuinely useful to psychiatrists without overwhelming them with alerts or unstructured AI-generated information.
+
+---
+
+# FINAL INSTRUCTION
+
+Be critical, practical and ambitious, but realistic.
+
+I want a technically sound prototype, not a collection of disconnected features.
+
+The most important thing is to demonstrate the complete value proposition:
+
+**A psychiatrist provides patient context → a patient interacts with an AI companion → the system extracts structured signals → it tracks their evolution over time → the psychiatrist receives explainable reports and alerts.**
+
+You have freedom to improve the architecture and reduce the scope.
+
+First, give me your complete technical assessment, recommended architecture, project structure, database schema and implementation roadmap.
+
+**DO NOT START IMPLEMENTING CODE YET.**
+
+I want to review and approve the proposed architecture before we begin implementation.go 

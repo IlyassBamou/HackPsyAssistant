@@ -1,4 +1,4 @@
-"""Generate synthetic labeled messages with Claude (uses your Claude Code subscription via the CLI).
+"""Generate synthetic labeled FRENCH messages with Claude (uses your Claude Code subscription via the CLI).
 
 GoEmotions only covers anxiety/mood. This fills sleep / isolation / selfharm (and extra anxiety/mood)
 with first-person patient-style messages, in a JSONL file consumed by train.py.
@@ -10,15 +10,15 @@ import argparse, json, pathlib, random, subprocess
 
 AXES = ["anxiety", "mood", "sleep", "isolation", "selfharm"]
 DESC = {
-    "anxiety": "worry, panic, tension, overwhelm, dread",
-    "mood": "sadness, emptiness, hopelessness, loss of interest, worthlessness",
-    "sleep": "insomnia, nightmares, waking at night, exhaustion from poor sleep",
-    "isolation": "loneliness, avoiding people, cancelling plans, feeling disconnected",
-    "selfharm": "passive/active thoughts of self-harm or being a burden (clinical-screening realism; no methods)",
+    "anxiety": "inquiétude, panique, tension, sentiment d'être débordé, appréhension",
+    "mood": "tristesse, vide, désespoir, perte d'intérêt, sentiment de nullité",
+    "sleep": "insomnie, cauchemars, réveils nocturnes, épuisement dû au manque de sommeil",
+    "isolation": "solitude, évitement des gens, annulation de rendez-vous, sentiment de déconnexion",
+    "selfharm": "idées passives ou actives d'automutilation ou sentiment d'être un fardeau (réalisme de dépistage clinique ; aucune méthode)",
 }
-PROMPT = """Generate {n} short first-person messages (10-40 words) that a patient might type to a therapy-support chatbot.
-Target: clearly expresses **{ax}** ({desc}), at mixed intensities: {mix}.
-Return ONLY a JSON list of strings. Vary vocabulary and tone; some casual, some formal. Do NOT include methods of self-harm."""
+PROMPT = """Génère {n} courts messages à la première personne, EN FRANÇAIS (10 à 40 mots), tels qu'un patient pourrait les écrire à un chatbot de soutien thérapeutique.
+Cible : exprime clairement **{ax}** ({desc}), avec des intensités variées : {mix}.
+Retourne UNIQUEMENT une liste JSON de chaînes. Varie le vocabulaire et le ton (familier, soutenu, SMS léger). N'inclus AUCUNE méthode d'automutilation."""
 
 def ask(prompt):
     r = subprocess.run(["claude", "-p", prompt, "--tools", "", "--model", "sonnet"],
@@ -37,7 +37,7 @@ def main():
     for ax in AXES:
         got = 0
         while got < a.per_axis:
-            mix = random.choice(["mostly mild", "mostly moderate", "mixed mild to severe"])
+            mix = random.choice(["surtout léger", "surtout modéré", "mélange de léger à sévère"])
             try:
                 texts = ask(PROMPT.format(n=a.batch, ax=ax, desc=DESC[ax], mix=mix))
             except Exception as e:
@@ -48,7 +48,7 @@ def main():
     # neutral / positive negatives so the model learns "none"
     for _ in range(a.per_axis // 30 + 1):
         try:
-            for t in ask("Generate 30 short first-person neutral or positive everyday messages (10-40 words) to a chatbot, no distress. Return ONLY a JSON list of strings."):
+            for t in ask("Génère 30 courts messages à la première personne, EN FRANÇAIS (10-40 mots), neutres ou positifs, du quotidien, sans détresse, adressés à un chatbot. Retourne UNIQUEMENT une liste JSON de chaînes."):
                 rows.append({"text": t, "labels": {k: 0 for k in AXES}})
         except Exception as e:
             print("retry neutral", e)

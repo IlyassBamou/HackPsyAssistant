@@ -1,17 +1,18 @@
 """Fine-tune a multi-label transformer on the 5 mental-health axes.
 
 Data sources (merged):
-  1. GoEmotions (HF)        -> anxiety (fear, nervousness) and mood (sadness, grief, disappointment, remorse).
+  1. GoEmotions (HF, English) -> anxiety (fear, nervousness) and mood (sadness, grief, disappointment, remorse).
                                The other 3 axes are UNKNOWN for these rows -> masked out of the loss.
-  2. data/synthetic.jsonl   -> all 5 axes known (made by scripts/generate_data.py).
+  2. data/synthetic.jsonl   -> all 5 axes known, in FRENCH (made by scripts/generate_data.py).
+     A multilingual encoder (XLM-R) transfers the English emotion signal to French.
   3. --extra file.jsonl     -> optional, e.g. Dreaddit mapped to anxiety, or real annotated data.
 
 Key idea: MASKED BCE. A label = -1 means "unknown, don't penalise". This stops the model from
 learning "GoEmotions text is never about sleep" which would be a dataset artifact, not a fact.
 
 Run (Colab/Kaggle GPU recommended, ~10-20 min):
-  uv run python scripts/train.py --model mental/mental-bert-base-uncased --out models/mentalbert
-Then:  HACKPSY_MODEL_DIR=models/mentalbert uv run hackpsyassistant
+  uv run python scripts/train.py --out models/xlmr-fr
+Then:  HACKPSY_MODEL_DIR=models/xlmr-fr uv run hackpsyassistant
 """
 import argparse, json, os, random
 import numpy as np
@@ -72,14 +73,15 @@ class MaskedTrainer(Trainer):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--model", default="mental/mental-bert-base-uncased",
-                    help="gated on HF (accept terms + `huggingface-cli login`). Fallbacks: mental/mental-roberta-base, distilroberta-base")
-    ap.add_argument("--out", default="models/mentalbert")
+    ap.add_argument("--model", default="FacebookAI/xlm-roberta-base",
+                    help="multilingual, ungated. Alternatives: almanach/camembert-base (French only), "
+                         "distilbert-base-multilingual-cased (faster). English-only: mental/mental-bert-base-uncased (gated)")
+    ap.add_argument("--out", default="models/xlmr-fr")
     ap.add_argument("--synthetic", default="data/synthetic.jsonl")
     ap.add_argument("--extra", default=None)
     ap.add_argument("--goemo-limit", type=int, default=20000)
-    ap.add_argument("--epochs", type=int, default=3)
-    ap.add_argument("--lr", type=float, default=2e-5)
+    ap.add_argument("--epochs", type=int, default=4)
+    ap.add_argument("--lr", type=float, default=3e-5)
     ap.add_argument("--bs", type=int, default=16)
     ap.add_argument("--max-len", type=int, default=128)
     a = ap.parse_args()
@@ -127,10 +129,12 @@ def main():
         res["macro_f1"] = float(np.mean(f1s)) if f1s else 0.0
         return res
 
+    steps_per_epoch = max(1, (len(dtrain) + a.bs - 1) // a.bs)
     args = TrainingArguments(
         output_dir=a.out, num_train_epochs=a.epochs, learning_rate=a.lr,
         per_device_train_batch_size=a.bs, per_device_eval_batch_size=64,
-        weight_decay=0.01, warmup_ratio=0.1, eval_strategy="epoch", save_strategy="epoch",
+        weight_decay=0.01, warmup_steps=int(0.1 * steps_per_epoch * a.epochs),
+        eval_strategy="epoch", save_strategy="epoch",
         load_best_model_at_end=True, metric_for_best_model="macro_f1",
         save_total_limit=1, logging_steps=50, report_to="none", fp16=torch.cuda.is_available())
     tr = MaskedTrainer(model=model, args=args, train_dataset=dtrain, eval_dataset=dval,

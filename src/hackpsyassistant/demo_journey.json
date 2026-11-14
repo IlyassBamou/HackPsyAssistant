@@ -1,13 +1,13 @@
 {
-  "context": "Patient, 24, graduate student. Referred for exam-related anxiety and poor sleep. Doctor wants to track anxiety, sleep, mood and social isolation across sessions.",
+  "context": "Patiente de 24 ans, étudiante en master. Adressée pour une anxiété liée aux examens et un sommeil perturbé. Le médecin souhaite suivre l'anxiété, le sommeil, l'humeur et l'isolement social au fil des séances.",
   "messages": [
-    "Hi, I had an okay day. A bit of studying and a walk with my friends.",
-    "I'm a little worried about the exam next week but I think I can handle it.",
-    "I slept fine, I was tired though after the library.",
-    "Honestly I'm more stressed this week. My mind keeps racing about the deadline.",
-    "I stayed awake until 3am again, I couldn't stop worrying about the exam.",
-    "I cancelled on my friends again. I just want to avoid everyone, I feel so anxious around people.",
-    "I'm exhausted, I barely sleep and I feel overwhelmed and kind of empty.",
-    "Nothing feels worth it, I feel alone and like a burden to everybody."
+    "Bonjour, ma journée s'est plutôt bien passée. J'ai un peu révisé et je suis allée marcher avec mes amis.",
+    "Je suis un peu inquiète pour l'examen de la semaine prochaine, mais je pense que ça ira.",
+    "J'ai bien dormi, juste un peu fatiguée après la bibliothèque.",
+    "Franchement je suis plus stressée cette semaine. Je ressasse l'échéance sans arrêt, j'ai peur de ne pas y arriver.",
+    "Je suis restée éveillée jusqu'à 3h encore, impossible d'arrêter de m'angoisser pour l'examen.",
+    "J'ai annulé avec mes amis encore une fois. J'évite tout le monde, je suis angoissée dès que je dois voir quelqu'un.",
+    "Je suis épuisée, je dors à peine et je me sens débordée et vide.",
+    "Plus rien n'a de sens, je me sens seule et comme un fardeau pour tout le monde."
   ]
 }

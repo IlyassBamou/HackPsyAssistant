@@ -10,28 +10,34 @@ from __future__ import annotations
 import math
 import os
 import re
+from pathlib import Path
 
 from .config import AXES
 
 LEXICON: dict[str, dict[str, float]] = {
-    "anxiety": {"anxious": 1, "anxiety": 1, "panic": 1, "worried": .8, "worry": .8, "nervous": .8,
-                "stress": .7, "stressed": .8, "afraid": .7, "scared": .7, "overwhelmed": .8,
-                "racing": .6, "tense": .6, "dread": .8, "exam": .3, "deadline": .3},
-    "mood": {"sad": .8, "depressed": 1, "hopeless": 1, "empty": .8, "worthless": 1, "tired": .4,
-             "crying": .8, "cry": .7, "numb": .8, "nothing": .4, "pointless": .9, "guilty": .6,
-             "lonely": .5, "unmotivated": .7},
-    "sleep": {"sleep": .4, "insomnia": 1, "awake": .6, "nightmares": .9, "nightmare": .9, "exhausted": .6,
-              "tossing": .7, "restless": .6, "bed": .2, "3am": .8, "woke": .5},
-    "isolation": {"alone": .8, "lonely": .9, "isolated": 1, "nobody": .8, "avoid": .5, "avoiding": .6,
-                  "ignored": .6, "cancelled": .4, "stayed": .2, "friends": .1, "withdrawn": .9},
-    "selfharm": {"suicide": 1, "suicidal": 1, "kill": .9, "die": .8, "end": .3, "hurt": .6,
-                 "harm": .8, "disappear": .8, "burden": .8, "cut": .6, "life": .1},
+    "anxiety": {"anxieux": 1, "anxieuse": 1, "anxiété": 1, "angoisse": 1, "angoissé": 1, "angoissée": 1,
+                "angoisses": 1, "panique": 1, "stress": .7, "stressé": .8, "stressée": .8, "inquiet": .8,
+                "inquiète": .8, "inquiétude": .8, "peur": .7, "nerveux": .8, "nerveuse": .8, "débordé": .8,
+                "débordée": .8, "dépassé": .7, "tendu": .6, "tendue": .6, "appréhension": .8,
+                "examen": .3, "échéance": .3, "oppressé": .8, "ressasse": .7, "ressasser": .7},
+    "mood": {"triste": .8, "tristesse": .8, "déprimé": 1, "déprimée": 1, "dépression": 1, "désespoir": 1,
+             "désespéré": 1, "vide": .8, "nul": .7, "nulle": .7, "inutile": 1, "pleure": .8, "pleurer": .8,
+             "larmes": .7, "engourdi": .8, "rien": .4, "coupable": .6, "démotivé": .7, "démotivée": .7,
+             "sens": .2, "envie": .2, "valeur": .3},
+    "sleep": {"sommeil": .5, "insomnie": 1, "insomnies": 1, "éveillé": .7, "éveillée": .7, "réveillé": .5,
+              "réveille": .5, "cauchemar": .9, "cauchemars": .9, "épuisé": .6, "épuisée": .6,
+              "fatigué": .4, "fatiguée": .4, "dors": .5, "dormir": .5, "agité": .5, "3h": .8, "4h": .6, "nuit": .3},
+    "isolation": {"seul": .8, "seule": .8, "solitude": .9, "isolé": 1, "isolée": 1, "personne": .5,
+                  "évite": .6, "éviter": .6, "évitée": .5, "annulé": .5, "annulée": .5, "annule": .5,
+                  "ignoré": .6, "ignorée": .6, "repli": .9, "amis": .1, "sortir": .3},
+    "selfharm": {"suicide": 1, "suicidaire": 1, "mourir": .9, "mort": .6, "disparaître": .8, "disparaitre": .8,
+                 "fardeau": .9, "blesser": .7, "mutiler": .9, "finir": .3, "vivre": .2, "fin": .2},
 }
-NEGATIONS = {"not", "no", "never", "don't", "dont", "didn't", "n't", "without"}
+NEGATIONS = {"pas", "jamais", "sans", "aucun", "plus", "ne", "n"}
 
 
 def tokenize(text: str) -> list[str]:
-    return re.findall(r"[\w']+", text.lower())
+    return re.findall(r"\w+", text.lower())
 
 
 class LexiconScorer:
@@ -102,6 +108,10 @@ class TransformerScorer:
 
 def load_scorer():
     d = os.environ.get("HACKPSY_MODEL_DIR")
+    if not d:
+        default = Path(__file__).resolve().parent.parent.parent / "models" / "xlmr-fr"
+        if (default / "config.json").is_file():
+            d = str(default)
     if d and os.path.isdir(d):
         try:
             return TransformerScorer(d)
