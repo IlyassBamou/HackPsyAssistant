@@ -1,8 +1,11 @@
 """Chat + session summary. Uses Claude when ANTHROPIC_API_KEY is set, else a rule-based fallback."""
 from __future__ import annotations
 
+import functools
 import os
+import re
 import shutil
+from pathlib import Path
 
 from ..core.config import AXES, RECOMMENDATIONS
 
@@ -28,14 +31,29 @@ def _client():
     return anthropic.Anthropic()
 
 
+@functools.lru_cache(maxsize=1)
+def find_claude_cli() -> str | None:
+    """HACKPSY_CLAUDE_BIN, else `claude` on PATH, else the newest binary bundled with the VS Code extension."""
+    if os.environ.get("HACKPSY_CLAUDE_BIN"):
+        return os.environ["HACKPSY_CLAUDE_BIN"]
+    if found := shutil.which("claude"):
+        return found
+    exe = "claude.exe" if os.name == "nt" else "claude"
+    bundled = Path.home().glob(f".vscode/extensions/anthropic.claude-code-*/resources/native-binary/{exe}")
+    version = lambda p: [int(n) for n in re.findall(r"\d+", p.parents[2].name.split("claude-code-")[1])[:3]]
+    newest = max(bundled, key=version, default=None)
+    return str(newest) if newest else None
+
+
 def _call_cli(system: str, messages: list[dict]) -> str:
     """Use the local Claude Code CLI (your subscription, no API key) in headless mode."""
     import subprocess
     convo = "\n".join(f"{m['role'].upper()}: {m['content']}" for m in messages)
     prompt = f"{convo}\n\nWrite only the next ASSISTANT reply (or the requested document)."
+    # prompt goes through stdin: no command-line length limit, and UTF-8 keeps French accents intact
     r = subprocess.run(
-        ["claude", "-p", prompt, "--system-prompt", system, "--tools", "", "--model", CLI_MODEL],
-        capture_output=True, text=True, timeout=90)
+        [find_claude_cli(), "-p", "--system-prompt", system, "--tools", "", "--model", CLI_MODEL],
+        input=prompt, capture_output=True, text=True, encoding="utf-8", timeout=90)
     if r.returncode != 0 or not r.stdout.strip():
         raise RuntimeError(r.stderr.strip() or "empty cli output")
     return r.stdout.strip()
@@ -51,7 +69,7 @@ def _call(system: str, messages: list[dict], max_tokens: int = 1024) -> str:
             betas=["server-side-fallback-2026-07-01"], fallbacks="default",
         )
         return "".join(b.text for b in r.content if b.type == "text").strip()
-    if os.environ.get("HACKPSY_USE_CLI", "1") == "1" and shutil.which("claude"):
+    if os.environ.get("HACKPSY_USE_CLI", "1") == "1" and find_claude_cli():
         return _call_cli(system, messages)
     raise RuntimeError("no LLM backend available")
 

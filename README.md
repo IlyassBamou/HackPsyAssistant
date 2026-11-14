@@ -270,3 +270,27 @@ Les clés d'axes (`anxiety`, `mood`, `sleep`, `isolation`, `selfharm`) doivent c
 - Le JSON n'est pas une base de données : adapté à un prototype mono-serveur uniquement.
 - Le scoreur lexical actuel ne reconnaît que l'anglais : des messages en français obtiennent des scores proches de 0
   tant que le modèle français (MentalBERT adapté) n'est pas branché.
+
+### Étape 4 — Claude en temps réel via la CLI Claude Code (sans clé API)
+
+**Transformation**
+
+- `llm_service.find_claude_cli()` trouve automatiquement l'exécutable Claude, dans cet ordre :
+  variable `HACKPSY_CLAUDE_BIN` → commande `claude` dans le PATH → `claude.exe` le plus récent
+  fourni par l'extension VS Code (`~/.vscode/extensions/anthropic.claude-code-*/resources/native-binary/`).
+- Le prompt est envoyé par l'entrée standard (plus de limite de longueur de ligne de commande sous Windows)
+  et lu en UTF-8 (accents français corrects).
+- Ordre des moteurs inchangé : clé API si `ANTHROPIC_API_KEY` est défini → CLI Claude Code → réponses de secours.
+- Testé : réponses réelles en français, cohérentes avec la conversation, ~8 s par message (modèle `sonnet`).
+
+**Pourquoi**
+
+- Pas de clé API disponible : la CLI utilise l'abonnement Claude de la personne connectée.
+- Avant, la CLI n'était pas trouvée (elle n'est pas dans le PATH quand elle vient de l'extension VS Code),
+  donc toutes les réponses étaient les phrases de secours.
+
+**À savoir**
+
+- Chaque machine qui lance le backend doit avoir Claude Code installé et connecté (`claude auth login`).
+- Si la connexion a expiré, les réponses repassent en secours (`reply_source: "fallback"`) : relancer `claude auth login`.
+- L'interface doit afficher un indicateur « l'assistant écrit… » (8–15 s de délai).
