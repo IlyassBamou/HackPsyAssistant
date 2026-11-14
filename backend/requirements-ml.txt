@@ -1,8 +1,8 @@
 # Optional: TransformerScorer / MentalBERT and scripts/train.py (heavy)
 -r requirements.txt
-torch>=2.15.0
-transformers>=5.23.0
-accelerate>=1.15.0
-datasets>=5.2.0
-huggingface-hub>=2.4.0
-scikit-learn>=1.9.1
+torch>=2.2
+transformers>=4.40
+accelerate>=0.30
+datasets>=2.19
+huggingface-hub>=0.23
+scikit-learn>=1.4

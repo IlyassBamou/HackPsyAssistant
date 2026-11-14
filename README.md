@@ -10,11 +10,17 @@ transmis à Claude pour personnaliser la réponse, et le psychiatre suit l'évol
 
 ## Lancer le backend
 
-```bash
+Toujours depuis la racine du projet (`HackPsyAssistant/`, pas `backend/`). Python ≥ 3.10.
+
+```powershell
+python -m venv .venv                           # une seule fois (ou: py -m venv .venv)
+.\.venv\Scripts\Activate.ps1                   # PowerShell ; Git Bash : source .venv/Scripts/activate
 pip install -r backend/requirements.txt        # MVP (scoreur lexical + Claude)
 pip install -r backend/requirements-ml.txt     # optionnel : MentalBERT / entraînement
-uvicorn backend.main:app --reload              # depuis la racine du projet
+uvicorn backend.main:app --reload
 ```
+
+Si PowerShell refuse d'exécuter le script d'activation : `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
 
 Puis ouvrir http://127.0.0.1:8000. Claude est utilisé si `ANTHROPIC_API_KEY` est défini,
 sinon via la CLI Claude Code, sinon des réponses de secours à base de règles.
