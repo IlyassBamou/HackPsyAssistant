@@ -9,3 +9,14 @@ wheels/
 # Virtual environments
 .venv
 New-Doc-Plugin-IA/
+
+# Secrets and local artifacts - never commit
+.env
+.env.*
+*.key
+models/
+checkpoints/
+data/
+*.safetensors
+*.bin
+.claude/

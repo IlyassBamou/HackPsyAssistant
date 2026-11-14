@@ -1,2 +1,3 @@
-def main() -> None:
-    print("Hello from hackpsyassistant!")
+from .api import main
+
+__all__ = ["main"]

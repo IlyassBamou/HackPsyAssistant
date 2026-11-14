@@ -1,0 +1,13 @@
+{
+  "context": "Patient, 24, graduate student. Referred for exam-related anxiety and poor sleep. Doctor wants to track anxiety, sleep, mood and social isolation across sessions.",
+  "messages": [
+    "Hi, I had an okay day. A bit of studying and a walk with my friends.",
+    "I'm a little worried about the exam next week but I think I can handle it.",
+    "I slept fine, I was tired though after the library.",
+    "Honestly I'm more stressed this week. My mind keeps racing about the deadline.",
+    "I stayed awake until 3am again, I couldn't stop worrying about the exam.",
+    "I cancelled on my friends again. I just want to avoid everyone, I feel so anxious around people.",
+    "I'm exhausted, I barely sleep and I feel overwhelmed and kind of empty.",
+    "Nothing feels worth it, I feel alone and like a burden to everybody."
+  ]
+}

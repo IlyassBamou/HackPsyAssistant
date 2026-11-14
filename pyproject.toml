@@ -8,12 +8,17 @@ authors = [
 ]
 requires-python = ">=3.14"
 dependencies = [
+    "accelerate>=1.15.0",
+    "anthropic>=2.8.0",
     "datasets>=5.2.0",
+    "fastapi>=0.162.7",
     "huggingface-hub>=2.4.0",
     "numpy>=2.5.4",
     "pip>=26.3",
+    "scikit-learn>=1.9.1",
     "torch>=2.15.0",
     "transformers>=5.23.0",
+    "uvicorn[standard]>=0.54.0",
 ]
 
 [project.scripts]

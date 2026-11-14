@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HackPsy Assistant</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--ink:#1d2433;--mute:#6b7488;--line:#e4e7ef;--acc:#3d5a80;--bad:#c1121f;--warn:#e07a5f}
+@media (prefers-color-scheme:dark){:root{--bg:#10131a;--card:#181c26;--ink:#e8ebf3;--mute:#8d96ab;--line:#2a3040;--acc:#7fa3d6}}
+*{box-sizing:border-box}body{margin:0;font:15px/1.5 system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+header{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--card)}
+header h1{font-size:17px;margin:0}header small{color:var(--mute)}
+main{display:grid;grid-template-columns:minmax(320px,1fr) minmax(380px,1.3fr);gap:16px;padding:16px;max-width:1400px;margin:auto}
+@media(max-width:900px){main{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--mute);margin:0 0 10px}
+#chat{height:380px;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:4px}
+.msg{max-width:85%;padding:8px 12px;border-radius:12px;white-space:pre-wrap}
+.msg.user{align-self:flex-end;background:var(--acc);color:#fff}
+.msg.bot{align-self:flex-start;background:var(--bg);border:1px solid var(--line)}
+.row{display:flex;gap:8px;margin-top:10px}
+input[type=text],textarea{flex:1;padding:9px 11px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}
+textarea{width:100%;resize:vertical}
+button{padding:8px 14px;border-radius:8px;border:1px solid var(--acc);background:var(--acc);color:#fff;font:inherit;cursor:pointer}
+button.ghost{background:transparent;color:var(--acc)}button:disabled{opacity:.5;cursor:wait}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.chip{padding:3px 10px;border-radius:99px;border:1px solid var(--line);cursor:pointer;font-size:13px;user-select:none}
+.chip.on{color:#fff;border-color:transparent}
+#alerts .alert{border-left:4px solid var(--warn);background:color-mix(in srgb,var(--warn) 12%,transparent);padding:8px 12px;border-radius:6px;margin-bottom:8px}
+#alerts .alert.crit{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 14%,transparent)}
+.gauges{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:12px}
+.gauge{border:1px solid var(--line);border-radius:10px;padding:8px}
+.gauge b{font-size:20px}.gauge .bar{height:6px;border-radius:3px;background:var(--line);margin-top:6px;overflow:hidden}
+.gauge .bar i{display:block;height:100%}
+.up{color:var(--bad)}.down{color:#2a9d8f}.mute{color:var(--mute)}
+.word{display:inline-block;padding:1px 7px;margin:2px;border-radius:6px;font-size:13px}
+#summary{white-space:pre-wrap;font-size:14px}
+.col{display:flex;flex-direction:column;gap:16px}
+canvas{max-height:260px}
+.disclaimer{font-size:12px;color:var(--mute);padding:0 16px 16px;text-align:center}
+</style>
+</head>
+<body>
+<header>
+  <h1>HackPsy Assistant <small>· clinician-guided companion</small></h1>
+  <small id="meta"></small>
+</header>
+<main>
+  <div class="col">
+    <div class="card">
+      <h2>Doctor context</h2>
+      <textarea id="context" rows="3" placeholder="Doctor notes: diagnosis hypotheses, goals, what to monitor..."></textarea>
+      <div class="chips" id="axisChips"></div>
+    </div>
+    <div class="card">
+      <h2>Conversation</h2>
+      <div id="chat"></div>
+      <div class="row">
+        <input type="text" id="input" placeholder="Patient message...">
+        <button id="send">Send</button>
+      </div>
+      <div class="row">
+        <button class="ghost" id="demo">▶ Replay demo journey</button>
+        <button class="ghost" id="sum">Session summary</button>
+        <button class="ghost" id="reset">New session</button>
+      </div>
+    </div>
+    <div class="card"><h2>Summary for the doctor</h2><div id="summary" class="mute">Click “Session summary”.</div></div>
+  </div>
+  <div class="col">
+    <div id="alerts"></div>
+    <div class="card">
+      <h2>Mental evolution</h2>
+      <div class="gauges" id="gauges"></div>
+      <canvas id="chart"></canvas>
+    </div>
+    <div class="card">
+      <h2>Why? Words driving the last message</h2>
+      <div id="expl" class="mute">Send a message to see explanations.</div>
+    </div>
+  </div>
+</main>
+<div class="disclaimer">Decision-support prototype, not a medical device. Does not diagnose. In danger call 3114 (FR) / your local emergency number.</div>
+<script>
+const $ = s => document.querySelector(s);
+let sid = null, AXES = {}, active = new Set(), chart = null;
+
+async function api(path, body) {
+  const r = await fetch('/api/' + path, body ? {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)} : {});
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+function add(role, text) {
+  const d = document.createElement('div'); d.className = 'msg ' + role; d.textContent = text;
+  $('#chat').appendChild(d); $('#chat').scrollTop = 1e9;
+}
+function renderChips() {
+  $('#axisChips').innerHTML = '';
+  for (const [k, v] of Object.entries(AXES)) {
+    const c = document.createElement('span');
+    c.className = 'chip' + (active.has(k) ? ' on' : ''); c.textContent = v.label;
+    if (active.has(k)) c.style.background = v.color;
+    c.onclick = () => { active.has(k) ? active.delete(k) : active.add(k); renderChips(); };
+    $('#axisChips').appendChild(c);
+  }
+}
+function render(st) {
+  sid = st.session_id;
+  const an = st.analysis;
+  $('#meta').textContent = `scorer: ${st.scorer} · session ${sid}`;
+  $('#alerts').innerHTML = an.alerts.map(a =>
+    `<div class="alert ${a.critical ? 'crit' : ''}"><b>${a.critical ? '⚠ ' : '↗ '}${a.label} is rising</b> (level ${a.level.toFixed(2)}, slope ${a.slope >= 0 ? '+' : ''}${a.slope.toFixed(3)})<br>${a.recommendation}</div>`).join('');
+  $('#gauges').innerHTML = Object.entries(an.levels).map(([k, v]) => {
+    const col = AXES[k].color, up = v.slope > 0.03, dn = v.slope < -0.03;
+    return `<div class="gauge"><span class="mute">${AXES[k].label}</span><br><b>${(v.level*100).toFixed(0)}</b>
+      <span class="${up?'up':dn?'down':'mute'}">${up?'↗':dn?'↘':'→'}</span>
+      <div class="bar"><i style="width:${v.level*100}%;background:${col}"></i></div></div>`;
+  }).join('') + `<div class="gauge"><span class="mute">Risk index</span><br><b>${(an.index*100).toFixed(0)}</b><div class="bar"><i style="width:${an.index*100}%;background:var(--bad)"></i></div></div>`;
+  const labels = Object.values(an.series)[0]?.ema.map((_, i) => 'M' + (i + 1)) || [];
+  const ds = Object.entries(an.series).map(([k, s]) => ({label: AXES[k].label, data: s.ema, borderColor: AXES[k].color, backgroundColor: AXES[k].color, tension: .3, pointRadius: 3}));
+  if (chart) chart.destroy();
+  chart = new Chart($('#chart'), {type: 'line', data: {labels, datasets: ds},
+    options: {animation: {duration: 400}, scales: {y: {min: 0, max: 1, title: {display: true, text: 'smoothed score'}}}, plugins: {legend: {position: 'bottom'}}}});
+  const last = st.explanations[st.explanations.length - 1];
+  if (last) {
+    const rows = Object.entries(last).filter(([k, w]) => w.length && AXES[k]).map(([k, w]) =>
+      `<div style="margin-bottom:6px"><b style="color:${AXES[k].color}">${AXES[k].label}</b><br>` +
+      w.map(x => `<span class="word" style="background:color-mix(in srgb,${AXES[k].color} ${Math.round(25 + 60 * Math.min(1, x.weight))}%,transparent)">${x.word}</span>`).join('') + '</div>');
+    $('#expl').innerHTML = rows.join('') || '<span class="mute">No strong signal in this message.</span>';
+  }
+}
+async function send(text) {
+  if (!text.trim()) return;
+  add('user', text); $('#input').value = ''; $('#send').disabled = true;
+  try {
+    const st = await api('chat', {session_id: sid, message: text, context: $('#context').value, axes: [...active]});
+    add('bot', st.reply); render(st);
+  } catch (e) { add('bot', 'Error: ' + e.message); }
+  $('#send').disabled = false;
+}
+$('#send').onclick = () => send($('#input').value);
+$('#input').onkeydown = e => { if (e.key === 'Enter') send($('#input').value); };
+$('#sum').onclick = async () => {
+  if (!sid) return; $('#summary').textContent = 'Generating...';
+  $('#summary').textContent = (await api('summary', {session_id: sid})).summary;
+};
+$('#reset').onclick = () => { sid = null; $('#chat').innerHTML = ''; $('#alerts').innerHTML = ''; $('#gauges').innerHTML = ''; $('#expl').textContent = ''; if (chart) chart.destroy(); $('#summary').textContent = 'Click “Session summary”.'; };
+$('#demo').onclick = async () => {
+  $('#reset').click(); $('#demo').disabled = true;
+  const d = await api('demo'); $('#context').value = d.context;
+  for (const m of d.messages) { await send(m); await new Promise(r => setTimeout(r, 900)); }
+  $('#demo').disabled = false;
+};
+(async () => {
+  const c = await api('config'); AXES = c.axes; active = new Set(Object.keys(AXES));
+  $('#meta').textContent = `scorer: ${c.scorer} · llm: ${c.llm}`; renderChips();
+})();
+</script>
+</body>
+</html>
