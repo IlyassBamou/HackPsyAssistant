@@ -10,10 +10,20 @@
   },
   "psychiatrist": "Dr Fictif (psychiatre référent)",
   "followed_since": "2026-09-15",
-  "active_axes": ["anxiety", "mood", "sleep", "isolation", "selfharm"],
+  "active_axes": [
+    "anxiety",
+    "mood",
+    "sleep",
+    "isolation",
+    "selfharm"
+  ],
   "doctor_context": "Patiente fictive, 24 ans, étudiante en master. Adressée pour une anxiété liée aux examens et des troubles du sommeil. Suivre l'anxiété, le sommeil, l'humeur et l'isolement ; vigilance sur les idées suicidaires passives déjà rapportées une fois.",
   "medical_history": {
-    "main_difficulties": ["anxiety", "sleep", "isolation"],
+    "main_difficulties": [
+      "anxiety",
+      "sleep",
+      "isolation"
+    ],
     "history": [
       "Épisode anxieux en période d'examens (2024), résolu sans traitement",
       "Idées suicidaires passives rapportées une fois (2025), sans plan ni passage à l'acte"
