@@ -6,20 +6,26 @@ import uuid
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from . import engagement, events, llm
+from . import engagement, events, gad7, llm
 from .config import AXES, DIAGNOSTIC_DISCLAIMER
 from .scorer import load_scorer
+from .tiers import classify
 from .trajectory import analyze
 
 HERE = Path(__file__).parent
 app = FastAPI(title="HackPsyAssistant")
 scorer = load_scorer()
 SESSIONS: dict[str, dict] = {}
+PEER_MSGS: dict[tuple[str, str], list[dict]] = {}
+
+
+def _peer_key(a: str, b: str) -> tuple[str, str]:
+    return tuple(sorted((a, b)))
 
 
 def _now() -> str:
@@ -32,6 +38,7 @@ def _session(sid: str | None, context: str | None = None, active: list[str] | No
     s = SESSIONS.setdefault(sid, {
         "name": name or "Patient anonyme", "context": "", "active": list(AXES),
         "convo": [], "scores": [], "expl": [], "alert_log": [], "events": [], "mentor": False,
+        "mentor_visible": False, "assigned_mentor": None, "mentees": [], "gad7": [],
         "created": _now(), "updated": _now(),
     })
     if context is not None:
@@ -145,6 +152,113 @@ def stt_warmup():
     return {"model": stt.warmup()}
 
 
+class GAD7In(BaseModel):
+    session_id: str
+    answers: list[int]
+
+
+@app.post("/api/gad7")
+def submit_gad7(body: GAD7In):
+    sid, s = _session(body.session_id)
+    try:
+        sc = gad7.score(body.answers)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    band = gad7.band_for(sc)
+    entry = {"ts": _now(), "answers": body.answers, "score": sc, "band": band}
+    s["gad7"].append(entry)
+    s["updated"] = _now()
+    if sc >= gad7.ALERT_THRESHOLD:
+        s["alert_log"].append({
+            "axis": "gad7", "label": "Auto-évaluation GAD-7 au-dessus du seuil usuel", "critical": False,
+            "level": sc / 21, "slope": 0.0,
+            "recommendation": "Score auto-déclaré par le patient — à discuter en consultation.",
+            "ts": entry["ts"], "msg_index": len(s["scores"]), "message": f"Score GAD-7 : {sc}/21", "seen": False,
+        })
+    return {"score": sc, "band": band, "streak": gad7.streak_minime_or_leger(s["gad7"]),
+            "history": s["gad7"], "items": gad7.ITEMS, "scale": gad7.SCALE}
+
+
+@app.get("/api/gad7/{sid}")
+def get_gad7(sid: str):
+    if sid not in SESSIONS:
+        raise HTTPException(404, "unknown session")
+    s = SESSIONS[sid]
+    return {"history": s["gad7"], "streak": gad7.streak_minime_or_leger(s["gad7"]),
+            "items": gad7.ITEMS, "scale": gad7.SCALE}
+
+
+# ---------------------------------------------------------------- peer mentoring (patient-facing)
+
+@app.get("/api/peer/info")
+def peer_info(sid: str):
+    if sid not in SESSIONS:
+        raise HTTPException(404, "unknown session")
+    s = SESSIONS[sid]
+    mentor = None
+    if s.get("mentor_visible") and s.get("assigned_mentor") in SESSIONS:
+        m = SESSIONS[s["assigned_mentor"]]
+        mentor = {"sid": s["assigned_mentor"], "name": m["name"]}
+    mentees = [{"sid": msid, "name": SESSIONS[msid]["name"]} for msid in s.get("mentees", []) if msid in SESSIONS]
+    return {"mentor": mentor, "mentees": mentees, "is_mentor": s.get("mentor", False)}
+
+
+def _assert_linked(a: str, b: str):
+    if a not in SESSIONS or b not in SESSIONS:
+        raise HTTPException(404, "unknown session")
+    sa, sb = SESSIONS[a], SESSIONS[b]
+    linked = sa.get("assigned_mentor") == b or sb.get("assigned_mentor") == a
+    if not linked:
+        raise HTTPException(403, "ce lien n'a pas été approuvé par le médecin")
+
+
+@app.get("/api/peer/thread")
+def peer_thread(me: str, with_sid: str = Query(..., alias="with")):
+    _assert_linked(me, with_sid)
+    return {"messages": PEER_MSGS.get(_peer_key(me, with_sid), [])}
+
+
+class PeerSendIn(BaseModel):
+    me: str
+    to: str
+    text: str
+
+
+@app.post("/api/peer/send")
+def peer_send(body: PeerSendIn):
+    _assert_linked(body.me, body.to)
+    key = _peer_key(body.me, body.to)
+    PEER_MSGS.setdefault(key, []).append({"from": body.me, "text": body.text, "ts": _now()})
+    return {"ok": True}
+
+
+class ApproveMentorIn(BaseModel):
+    session_id: str
+    mentor_session_id: str | None = None
+
+
+@app.post("/api/doctor/approve-mentor")
+def approve_mentor(body: ApproveMentorIn):
+    if body.session_id not in SESSIONS:
+        raise HTTPException(404, "unknown session")
+    s = SESSIONS[body.session_id]
+    old_mentor = s.get("assigned_mentor")
+    if old_mentor and old_mentor in SESSIONS and body.session_id in SESSIONS[old_mentor].get("mentees", []):
+        SESSIONS[old_mentor]["mentees"].remove(body.session_id)
+    if body.mentor_session_id:
+        if body.mentor_session_id not in SESSIONS:
+            raise HTTPException(404, "mentor inconnu")
+        s["assigned_mentor"] = body.mentor_session_id
+        s["mentor_visible"] = True
+        mentees = SESSIONS[body.mentor_session_id].setdefault("mentees", [])
+        if body.session_id not in mentees:
+            mentees.append(body.session_id)
+    else:
+        s["assigned_mentor"] = None
+        s["mentor_visible"] = False
+    return {"ok": True, "assigned_mentor": s["assigned_mentor"], "mentor_visible": s["mentor_visible"]}
+
+
 @app.post("/api/summary")
 def summary(body: SessionIn):
     if not body.session_id or body.session_id not in SESSIONS:
@@ -171,12 +285,15 @@ def doctor_patients():
         out.append({
             "session_id": sid, "name": s["name"], "created": s["created"], "updated": s["updated"],
             "n_messages": len(s["scores"]), "index": analysis["index"], "mentor": s.get("mentor", False),
+            "tier": classify(analysis["index"], analysis["alerts"]),
+            "mentor_visible": s.get("mentor_visible", False),
+            "assigned_mentor_name": SESSIONS.get(s.get("assigned_mentor") or "", {}).get("name"),
             "active_alerts": [{"axis": a["axis"], "label": a["label"], "critical": a["critical"]}
                               for a in analysis["alerts"]],
             "unseen_alerts": sum(1 for a in s["alert_log"] if not a["seen"]),
             "critical": any(a["critical"] for a in analysis["alerts"]),
             "days_since_last": eng["days_since_last"], "engagement_trend": eng["trend"],
-            "n_events": len(s["events"]),
+            "n_events": len(s["events"]), "latest_gad7": s["gad7"][-1] if s["gad7"] else None,
         })
     out.sort(key=lambda p: p["updated"], reverse=True)
     return out
@@ -194,11 +311,14 @@ def doctor_patient(sid: str):
                "n_messages": len(o["scores"]), "levels": _peak_levels(o)}
               for osid, o in SESSIONS.items() if osid != sid]
     peers = engagement.suggest_peers(sid, analysis["levels"], others)
+    mentees = [{"sid": m, "name": SESSIONS[m]["name"]} for m in s.get("mentees", []) if m in SESSIONS]
     return {**_state(sid, s), "name": s["name"], "context": s["context"],
             "created": s["created"], "updated": s["updated"],
             "convo": s["convo"], "alert_log": s["alert_log"], "events": s["events"],
             "mentor": s.get("mentor", False), "engagement": engagement.engagement_stats(s["convo"]),
-            "peers": peers}
+            "peers": peers, "tier": classify(analysis["index"], analysis["alerts"]),
+            "mentor_visible": s.get("mentor_visible", False), "assigned_mentor": s.get("assigned_mentor"),
+            "mentees": mentees, "gad7": s["gad7"]}
 
 
 @app.get("/api/doctor/alerts")
@@ -309,7 +429,30 @@ def seed_demo():
     )
 
 
+def _seed_extras():
+    by_name = {s["name"]: sid for sid, s in SESSIONS.items()}
+    karim, nadia = by_name["Karim Benali"], by_name["Nadia Chraibi"]
+
+    # Doctor already approved Nadia to see Karim as her peer mentor, with one opening exchange.
+    SESSIONS[nadia]["assigned_mentor"] = karim
+    SESSIONS[nadia]["mentor_visible"] = True
+    SESSIONS[karim]["mentees"] = [nadia]
+    key = _peer_key(karim, nadia)
+    t0 = datetime.now() - timedelta(days=2)
+    PEER_MSGS[key] = [
+        {"from": karim, "text": "Bonjour Nadia, le Dr m'a parlé de vous — j'ai traversé une période un peu similaire. Je suis là si vous voulez en parler.", "ts": t0.isoformat(timespec="seconds")},
+        {"from": nadia, "text": "Merci beaucoup, ça me touche. C'est vrai que ça fait du bien de parler à quelqu'un qui comprend vraiment.", "ts": (t0 + timedelta(hours=3)).isoformat(timespec="seconds")},
+    ]
+
+    # Karim's own GAD-7 history: a motivating downward trend (he's the recovered mentor).
+    base = datetime.now() - timedelta(days=21)
+    for i, sc in enumerate([13, 9, 6, 3]):
+        ts = (base + timedelta(days=7 * i)).isoformat(timespec="seconds")
+        SESSIONS[karim]["gad7"].append({"ts": ts, "answers": [sc // 7] * 7, "score": sc, "band": gad7.band_for(sc)})
+
+
 seed_demo()
+_seed_extras()
 
 
 def main() -> None:

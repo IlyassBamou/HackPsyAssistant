@@ -225,13 +225,12 @@ async function refreshList(){
   const unseen = ps.reduce((a,p)=>a+p.unseen_alerts,0);
   $('#bell').classList.toggle('has', unseen>0); $('#bellN').textContent = unseen;
   $('#plist').innerHTML = ps.map(p=>{
-    const sev = p.critical?'crit':(p.active_alerts.length?'warn':'ok');
-    const sevTxt = p.critical?'critique':(p.active_alerts.length? p.active_alerts.length+' alerte'+(p.active_alerts.length>1?'s':'') :'stable');
+    const sev = {leger:'ok',modere:'warn',vigilance:'crit'}[p.tier.key];
     return `<div class="prow ${p.session_id===curSid?'sel':''}" onclick="openPatient('${p.session_id}')">
       <div class="pav" style="background:${avColor(p.name)}">${initials(p.name)}</div>
-      <div class="nm"><b>${p.name} ${p.mentor?'🎓':''}</b><span>${p.n_messages} msg · ${p.days_since_last ?? 0}j${p.n_events?' · '+p.n_events+' évt.':''}</span></div>
+      <div class="nm"><b>${p.name} ${p.mentor?'🎓':''}${p.mentor_visible?'👥':''}</b><span>${p.n_messages} msg · ${p.days_since_last ?? 0}j${p.n_events?' · '+p.n_events+' évt.':''}</span></div>
       ${p.unseen_alerts?'<span class="dot-new" title="Nouvelles alertes"></span>':''}
-      <span class="pbadge ${sev}">${sevTxt}</span>
+      <span class="pbadge ${sev}">${p.tier.label}</span>
     </div>`;
   }).join('');
 }
@@ -251,7 +250,11 @@ async function openPatient(sid){
     <div class="card phead">
       <div class="pav" style="background:${avColor(d.name)}">${initials(d.name)}</div>
       <div class="t"><b>${d.name}</b><span>Suivi depuis le ${fmtTs(d.created)} · dernier échange ${fmtTs(d.updated)}</span>
-        ${d.mentor?'<span class="mentor-tag" style="margin-top:4px;display:inline-block">🎓 Pair-aidant disponible</span>':''}</div>
+        <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+          <span class="pbadge" style="background:${d.tier.color}22;color:${d.tier.color}">${d.tier.label}</span>
+          ${d.mentor?'<span class="mentor-tag">🎓 Pair-aidant disponible</span>':''}
+          ${d.mentor_visible?'<span class="mentor-tag" style="color:var(--accent);background:color-mix(in srgb,var(--accent) 15%,transparent)">👥 Voit son pair-aidant</span>':''}
+        </div></div>
       <div class="spacer"></div>
       <div class="ring-wrap" title="Indice d'attention clinique — non diagnostique">${ring(an.index, idxColor, 74, 8)}<div class="lab">${(an.index*100).toFixed(0)}<small>attention</small></div></div>
     </div>
@@ -281,9 +284,17 @@ async function openPatient(sid){
         Extraction factuelle par règles explicites (pas un modèle) — vérifiez toujours la citation.</div>
     </div>
 
+    <div class="card" id="gad7Card" style="${d.gad7.length?'':'display:none'}">
+      <h3 class="sec">📋 Auto-évaluation GAD-7 (déclarée par le patient)</h3>
+      <div id="gad7List"></div>
+      <div class="notice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        Questionnaire validé, rempli par le patient lui-même — visible aussi de son côté, à visée de suivi et de motivation.</div>
+    </div>
+
     <div class="card">
       <h3 class="sec">🤝 Pairs & mentorat</h3>
       <div id="peerList"></div>
+      ${d.mentor_visible ? `<div class="notice" style="margin-top:0;margin-bottom:10px">Ce patient voit actuellement son pair-aidant assigné dans son espace. <button class="btn-ghost" style="padding:4px 9px;font-size:11px;margin-left:6px" id="revokeMentor">Révoquer</button></div>` : ''}
       <div class="mentor-switch">
         <span>Marquer <b>${d.name}</b> comme pair-aidant rétabli, disponible pour aider d'autres patients</span>
         <div class="sw ${d.mentor?'on':''}" id="mentorSw"><div class="kn"></div></div>
@@ -358,11 +369,32 @@ async function openPatient(sid){
   $('#peerList').innerHTML = d.peers.length ? d.peers.map(p=>`
     <div class="peer-row">
       <div class="pav" style="background:${avColor(p.name)}">${initials(p.name)}</div>
-      <div class="nm"><b>${p.name} ${p.mentor?'<span class=\"mentor-tag\">🎓 pair-aidant</span>':''}</b>
+      <div class="nm"><b>${p.name} ${p.mentor?'<span class="mentor-tag">🎓 pair-aidant</span>':''}</b>
         <div class="sim-bar"><i style="width:${(p.similarity*100).toFixed(0)}%"></i></div>
       </div>
-      <button class="btn-ghost" style="padding:7px 11px;font-size:12px" onclick="suggestLink('${p.name.replace(/'/g,"\\'")}')">Suggérer la mise en relation</button>
+      ${p.mentor
+        ? (d.assigned_mentor===p.sid
+            ? `<span class="mentor-tag" style="color:var(--accent);background:color-mix(in srgb,var(--accent) 15%,transparent)">✓ assigné</span>`
+            : `<button class="btn-primary" style="padding:7px 11px;font-size:12px" onclick="approveMentor('${p.sid}')">✅ Approuver ce pair-aidant</button>`)
+        : `<button class="btn-ghost" style="padding:7px 11px;font-size:12px" onclick="suggestLink('${p.name.replace(/'/g,"\\'")}')">Suggérer la mise en relation</button>`}
     </div>`).join('') : '<span class="mute" style="font-size:12.5px">Pas encore de profil comparable dans la file active.</span>';
+
+  const bandDot = {minime:'#18a877',leger:'#8bc34a',modere:'#e8872f',severe:'#e5484d'};
+  $('#gad7List').innerHTML = [...d.gad7].reverse().map(g=>`
+    <div class="evt-row"><div class="evt-ic" style="background:${bandDot[g.band.key]}22">${g.score}</div>
+      <div style="flex:1"><b>${g.band.label}</b> <span class="meta">· ${fmtTs(g.ts)}</span>
+      <div class="evt-quote">Score ${g.score}/21</div></div></div>`).join('');
+
+  window.approveMentor = async (mentorSid) => {
+    await api('doctor/approve-mentor', {session_id: sid, mentor_session_id: mentorSid});
+    toast(`${d.name} peut désormais discuter avec son pair-aidant`);
+    openPatient(sid);
+  };
+  $('#revokeMentor')?.addEventListener('click', async () => {
+    await api('doctor/approve-mentor', {session_id: sid, mentor_session_id: null});
+    toast('Accès au pair-aidant révoqué');
+    openPatient(sid);
+  });
 
   $('#mentorSw').onclick = async () => {
     const newVal = !d.mentor;
