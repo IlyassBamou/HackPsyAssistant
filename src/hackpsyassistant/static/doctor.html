@@ -111,6 +111,58 @@ button{padding:9px 15px;border-radius:11px;border:1px solid transparent;font:600
 .word{display:inline-block;padding:2px 8px;margin:2px;border-radius:7px;font-size:12px;font-weight:600}
 .notice{font-size:11.5px;color:var(--mute);display:flex;gap:6px;align-items:center;margin-top:10px}
 .notice svg{width:13px;height:13px;flex:none}
+
+.disclaimer{display:flex;gap:9px;align-items:flex-start;background:var(--card-soft);border:1px solid var(--line);
+  border-radius:11px;padding:10px 13px;font-size:12px;color:var(--mute);line-height:1.5;margin-bottom:14px}
+.disclaimer svg{width:15px;height:15px;flex:none;margin-top:1px;stroke:var(--accent)}
+
+.collapse-btn{width:100%;display:flex;align-items:center;justify-content:space-between;background:var(--card-soft);
+  border:1px solid var(--line);border-radius:12px;padding:12px 15px;cursor:pointer;font:600 13.5px var(--font-ui);color:var(--ink)}
+.collapse-btn .chev{transition:.2s;width:15px;height:15px;stroke:var(--mute)}
+.collapse-btn.open .chev{transform:rotate(180deg)}
+.collapse-body{max-height:0;overflow:hidden;transition:max-height .3s ease}
+.collapse-body.open{max-height:3000px}
+.collapse-inner{padding-top:14px}
+
+.eng-row{display:flex;align-items:center;gap:14px;margin-bottom:4px}
+.eng-stat b{font:800 20px var(--font-ui);display:block} .eng-stat span{font-size:11px;color:var(--mute)}
+.spark{display:flex;align-items:flex-end;gap:3px;height:46px;flex:1}
+.spark i{flex:1;background:var(--accent);border-radius:3px 3px 0 0;min-height:3px;opacity:.85}
+.eng-trend{font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:99px}
+.eng-trend.down{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
+.eng-trend.up{background:color-mix(in srgb,var(--good) 14%,transparent);color:var(--good)}
+.eng-trend.flat{background:var(--card-soft);color:var(--mute)}
+
+.evt-row{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.evt-row:last-child{border-bottom:0}
+.evt-ic{width:30px;height:30px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;font-size:14px}
+.evt-ic.traitement{background:color-mix(in srgb,var(--accent) 15%,transparent)}
+.evt-ic.substance{background:color-mix(in srgb,var(--warn) 15%,transparent)}
+.evt-pol{font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:99px;margin-left:6px}
+.evt-pol.arret{background:color-mix(in srgb,var(--good) 15%,transparent);color:var(--good)}
+.evt-pol.reprise,.evt-pol.augmentation{background:color-mix(in srgb,var(--bad) 13%,transparent);color:var(--bad)}
+.evt-pol.modification{background:color-mix(in srgb,var(--accent) 13%,transparent);color:var(--accent)}
+.evt-quote{font-size:12.5px;font-style:italic;color:var(--mute);margin-top:2px}
+.evt-ts{font-size:10.5px;color:var(--mute)}
+
+.peer-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.peer-row:last-child{border-bottom:0}
+.peer-row .pav{width:30px;height:30px;font-size:11.5px}
+.peer-row .nm{flex:1;min-width:0}
+.peer-row .nm b{font-size:13px;display:flex;align-items:center;gap:6px}
+.mentor-tag{font-size:9.5px;font-weight:800;color:var(--good);background:color-mix(in srgb,var(--good) 15%,transparent);
+  padding:1px 7px;border-radius:99px}
+.sim-bar{height:4px;border-radius:2px;background:var(--line);margin-top:4px;overflow:hidden;width:120px}
+.sim-bar i{display:block;height:100%;background:var(--accent)}
+.mentor-switch{display:flex;align-items:center;justify-content:space-between;background:var(--card-soft);
+  border:1px solid var(--line);border-radius:11px;padding:10px 13px;margin-top:12px;font-size:12.5px}
+.sw{position:relative;width:38px;height:21px;border-radius:99px;background:var(--line);cursor:pointer;flex:none;transition:.2s}
+.sw.on{background:var(--good)}
+.sw .kn{position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.sw.on .kn{left:19px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);
+  padding:10px 18px;border-radius:99px;font-size:13px;opacity:0;transition:.3s;pointer-events:none;z-index:60}
+.toast.show{opacity:.94}
 </style>
 </head>
 <body>
@@ -142,11 +194,13 @@ button{padding:9px 15px;border-radius:11px;border:1px solid transparent;font:600
     </div>
   </div>
 </main>
+<div class="toast" id="toast"></div>
 
 <script>
 const $ = s => document.querySelector(s);
 const PAL = ['#4c6ef5','#0ea789','#e8872f','#7c5cff','#d6336c','#1098ad'];
-let AXES = {}, curSid = null, chart = null;
+let AXES = {}, curSid = null, chart = null, DISCLAIMER = '';
+function toast(t){ const el=$('#toast'); el.textContent=t; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),2600); }
 
 async function api(p, body){
   const r = await fetch('/api/'+p, body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});
@@ -175,7 +229,7 @@ async function refreshList(){
     const sevTxt = p.critical?'critique':(p.active_alerts.length? p.active_alerts.length+' alerte'+(p.active_alerts.length>1?'s':'') :'stable');
     return `<div class="prow ${p.session_id===curSid?'sel':''}" onclick="openPatient('${p.session_id}')">
       <div class="pav" style="background:${avColor(p.name)}">${initials(p.name)}</div>
-      <div class="nm"><b>${p.name}</b><span>${p.n_messages} messages · ${fmtTs(p.updated)}</span></div>
+      <div class="nm"><b>${p.name} ${p.mentor?'🎓':''}</b><span>${p.n_messages} msg · ${p.days_since_last ?? 0}j${p.n_events?' · '+p.n_events+' évt.':''}</span></div>
       ${p.unseen_alerts?'<span class="dot-new" title="Nouvelles alertes"></span>':''}
       <span class="pbadge ${sev}">${sevTxt}</span>
     </div>`;
@@ -189,25 +243,71 @@ async function openPatient(sid){
   const an = d.analysis;
   const idxColor = an.index>.55?'var(--bad)':an.index>.3?'var(--warn)':'var(--good)';
 
+  const eng = d.engagement, maxCount = Math.max(1, ...eng.by_day.map(x=>x.count));
+  const lastDays = eng.by_day.slice(-14);
+  const engTrendTxt = {up:'en hausse',down:'en baisse',flat:'stable'}[eng.trend];
+
   $('#detail').innerHTML = `
     <div class="card phead">
       <div class="pav" style="background:${avColor(d.name)}">${initials(d.name)}</div>
-      <div class="t"><b>${d.name}</b><span>Suivi depuis le ${fmtTs(d.created)} · dernier échange ${fmtTs(d.updated)}</span></div>
+      <div class="t"><b>${d.name}</b><span>Suivi depuis le ${fmtTs(d.created)} · dernier échange ${fmtTs(d.updated)}</span>
+        ${d.mentor?'<span class="mentor-tag" style="margin-top:4px;display:inline-block">🎓 Pair-aidant disponible</span>':''}</div>
       <div class="spacer"></div>
-      <div class="ring-wrap">${ring(an.index, idxColor, 74, 8)}<div class="lab">${(an.index*100).toFixed(0)}<small>indice</small></div></div>
+      <div class="ring-wrap" title="Indice d'attention clinique — non diagnostique">${ring(an.index, idxColor, 74, 8)}<div class="lab">${(an.index*100).toFixed(0)}<small>attention</small></div></div>
     </div>
 
     <div class="card" id="alertCard" style="${d.alert_log.length?'':'display:none'}">
-      <h3 class="sec">⚡ Alertes de seuil (${d.alert_log.length})</h3>
+      <h3 class="sec">⚡ Alertes de tendance (${d.alert_log.length})</h3>
       <div id="alertList"></div>
+      <div class="notice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        Signaux de tendance linguistique, à apprécier cliniquement — voir « Analyse détaillée » ci-dessous.</div>
     </div>
 
     <div class="card">
-      <h3 class="sec">Trajectoires par axe</h3>
-      <div class="gauges" id="gauges"></div>
-      <canvas id="chart" style="margin-top:14px"></canvas>
+      <h3 class="sec">💬 Fréquence des échanges</h3>
+      <div class="eng-row">
+        <div class="eng-stat"><b>${eng.total_messages}</b><span>messages</span></div>
+        <div class="eng-stat"><b>${eng.days_since_last ?? '—'}</b><span>j. depuis contact</span></div>
+        <div class="spark">${lastDays.map(x=>`<i style="height:${Math.max(8,x.count/maxCount*100)}%" title="${x.date} · ${x.count}"></i>`).join('') || '<span class="mute" style="font-size:12px">Pas encore de données</span>'}</div>
+        <span class="eng-trend ${eng.trend}">${eng.trend==='down'?'↓':eng.trend==='up'?'↑':'→'} ${engTrendTxt}</span>
+      </div>
+      ${eng.trend==='down' && eng.days_since_last>2 ? `<div class="notice" style="color:var(--warn)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>Le contact se fait plus rare — un signal à part entière, indépendant du contenu.</div>` : ''}
+    </div>
+
+    <div class="card" id="eventsCard" style="${d.events.length?'':'display:none'}">
+      <h3 class="sec">📋 Événements déclarés (${d.events.length})</h3>
+      <div id="eventsList"></div>
       <div class="notice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-        Scores descriptifs issus du langage — outil de suivi, en aucun cas un diagnostic.</div>
+        Extraction factuelle par règles explicites (pas un modèle) — vérifiez toujours la citation.</div>
+    </div>
+
+    <div class="card">
+      <h3 class="sec">🤝 Pairs & mentorat</h3>
+      <div id="peerList"></div>
+      <div class="mentor-switch">
+        <span>Marquer <b>${d.name}</b> comme pair-aidant rétabli, disponible pour aider d'autres patients</span>
+        <div class="sw ${d.mentor?'on':''}" id="mentorSw"><div class="kn"></div></div>
+      </div>
+    </div>
+
+    <button class="collapse-btn" id="toggleOptional">
+      <span>🔍 Analyse linguistique détaillée (optionnelle)</span>
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+    </button>
+    <div class="collapse-body" id="optionalBody">
+      <div class="collapse-inner">
+        <div class="card">
+          <div class="disclaimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            <span>${DISCLAIMER}</span></div>
+          <h3 class="sec">Marqueurs linguistiques — trajectoires</h3>
+          <div class="gauges" id="gauges"></div>
+          <canvas id="chart" style="margin-top:14px"></canvas>
+        </div>
+        <div class="card" id="explCard" style="display:none;margin-top:16px">
+          <h3 class="sec">Mots ayant motivé le dernier marqueur</h3>
+          <div id="expl"></div>
+        </div>
+      </div>
     </div>
 
     <div class="grid2">
@@ -228,12 +328,13 @@ async function openPatient(sid){
           <button class="btn-primary" id="genReport">Générer le rapport IA</button>
           <div id="report" style="margin-top:12px" class="mute"></div>
         </div>
-        <div class="card" id="explCard" style="display:none">
-          <h3 class="sec">Mots déclencheurs (dernier message)</h3>
-          <div id="expl"></div>
-        </div>
       </div>
     </div>`;
+
+  $('#toggleOptional').onclick = () => {
+    $('#toggleOptional').classList.toggle('open');
+    $('#optionalBody').classList.toggle('open');
+  };
 
   $('#alertList').innerHTML = [...d.alert_log].reverse().map(a=>`
     <div class="alert ${a.critical?'crit':''}">
@@ -243,9 +344,38 @@ async function openPatient(sid){
       </div>
     </div>`).join('');
 
+  const evtIcon = {traitement:'💊', substance:'🚬'};
+  $('#eventsList').innerHTML = [...d.events].reverse().map(e=>`
+    <div class="evt-row">
+      <div class="evt-ic ${e.kind}">${evtIcon[e.kind]||'📋'}</div>
+      <div style="flex:1;min-width:0">
+        <span><b>${e.label}</b><span class="evt-pol ${e.polarity}">${e.polarity}</span></span>
+        <div class="evt-quote">« ${e.quote} »</div>
+        <div class="evt-ts">${fmtTs(e.ts)}</div>
+      </div>
+    </div>`).join('') || '<span class="mute" style="font-size:12.5px">Aucun événement détecté.</span>';
+
+  $('#peerList').innerHTML = d.peers.length ? d.peers.map(p=>`
+    <div class="peer-row">
+      <div class="pav" style="background:${avColor(p.name)}">${initials(p.name)}</div>
+      <div class="nm"><b>${p.name} ${p.mentor?'<span class=\"mentor-tag\">🎓 pair-aidant</span>':''}</b>
+        <div class="sim-bar"><i style="width:${(p.similarity*100).toFixed(0)}%"></i></div>
+      </div>
+      <button class="btn-ghost" style="padding:7px 11px;font-size:12px" onclick="suggestLink('${p.name.replace(/'/g,"\\'")}')">Suggérer la mise en relation</button>
+    </div>`).join('') : '<span class="mute" style="font-size:12.5px">Pas encore de profil comparable dans la file active.</span>';
+
+  $('#mentorSw').onclick = async () => {
+    const newVal = !d.mentor;
+    await api('doctor/mentor', {session_id: sid, mentor: newVal});
+    d.mentor = newVal;
+    $('#mentorSw').classList.toggle('on', newVal);
+    toast(newVal ? `${d.name} est désormais marqué·e pair-aidant·e` : `${d.name} n'est plus pair-aidant·e`);
+    refreshList();
+  };
+
   $('#gauges').innerHTML = Object.entries(an.levels).map(([k,v])=>{
     const [cls,arrow]=trendCls(v.slope);
-    return `<div class="gauge"><div class="rw">${ring(v.level, AXES[k].color)}<div class="rl">${(v.level*100).toFixed(0)}</div></div>
+    return `<div class="gauge" title="${AXES[k].hint||''}"><div class="rw">${ring(v.level, AXES[k].color)}<div class="rl">${(v.level*100).toFixed(0)}</div></div>
       <div class="name">${AXES[k].label}</div><span class="trend ${cls}">${arrow} ${v.slope>=0?'+':''}${v.slope.toFixed(2)}</span></div>`;
   }).join('');
 
@@ -285,7 +415,14 @@ async function openPatient(sid){
   refreshList();
 }
 
-refreshList();
+function suggestLink(peerName){
+  toast(`Mise en relation suggérée avec ${peerName} — sous réserve de l'accord des deux patients`);
+}
+
+(async () => {
+  try { DISCLAIMER = (await api('config')).disclaimer; } catch(e) {}
+  refreshList();
+})();
 setInterval(refreshList, 5000);
 </script>
 </body>
