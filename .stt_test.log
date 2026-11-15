@@ -1,0 +1,9 @@
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 5640.37it/s]
+loading openai/whisper-small
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/479 [00:00<?, ?it/s]Loading weights:  30%|███       | 145/479 [00:00<00:00, 1262.01it/s]Loading weights:  57%|█████▋    | 272/479 [00:00<00:00, 944.03it/s] Loading weights: 100%|██████████| 479/479 [00:00<00:00, 1367.15it/s]
+loaded in 56s
+[transformers] Passing `generation_config` together with generation-related arguments=({'suppress_tokens', 'begin_suppress_tokens'}) is deprecated and will be removed in future versions. Please pass either a `generation_config` object OR all generation parameters explicitly, but not both.
+[transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer WhisperTokenizer. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+transcribed in 13.6s -> '...'
+PLUMBING OK

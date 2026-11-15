@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mon espace — HackPsy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,500;1,9..144,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f4ef; --card:#ffffff; --ink:#2a2d3a; --mute:#8a8fa3; --line:#e8e4da;
+  --teal:#0ea789; --teal-soft:#e2f5f0; --lav:#7c5cff; --bad:#e5484d;
+  --font-ui:'Inter',system-ui,sans-serif; --font-head:'Fraunces',serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#12141c; --card:#1a1d28; --ink:#ecedf3; --mute:#8a90a5; --line:#2a2e3d;
+    --teal:#3dd6b0; --teal-soft:#15332c; --lav:#a98cff; --bad:#ff7a7d;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;font:15.5px/1.55 var(--font-ui);color:var(--ink);min-height:100vh;background:var(--bg);
+  background-image:radial-gradient(700px 400px at 85% -5%, color-mix(in srgb,var(--teal) 10%,transparent), transparent 60%),
+                   radial-gradient(600px 400px at 0% 100%, color-mix(in srgb,var(--lav) 7%,transparent), transparent 60%)}
+.app{max-width:720px;margin:auto;min-height:100vh;display:flex;flex-direction:column;padding:0 16px}
+header{display:flex;align-items:center;justify-content:space-between;padding:16px 4px}
+.brand{display:flex;align-items:center;gap:10px}
+.mark{width:36px;height:36px;border-radius:11px;background:linear-gradient(140deg,var(--teal),var(--lav));
+  display:flex;align-items:center;justify-content:center}
+.mark svg{width:19px;height:19px;stroke:#fff}
+.brand b{font:700 16px var(--font-head)} .brand small{display:block;font-size:11px;color:var(--mute)}
+a.doc{font-size:12px;color:var(--mute);text-decoration:none} a.doc:hover{color:var(--teal)}
+
+#chat{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:10px 2px 16px}
+.day-hello{text-align:center;margin:26px 0 10px}
+.day-hello h2{font:500 26px var(--font-head);margin:0 0 6px}
+.day-hello p{color:var(--mute);margin:0;font-size:14px}
+.bubble-row{display:flex;gap:9px;align-items:flex-end;animation:rise .25s ease}
+@keyframes rise{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+.bubble-row.user{flex-direction:row-reverse}
+.avatar{width:30px;height:30px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:14px}
+.avatar.bot{background:linear-gradient(140deg,var(--teal),var(--lav));color:#fff}
+.avatar.user{background:var(--card);border:1px solid var(--line)}
+.msg{max-width:80%;padding:11px 15px;border-radius:18px;white-space:pre-wrap}
+.bubble-row.user .msg{background:linear-gradient(140deg,var(--teal),color-mix(in srgb,var(--teal) 70%,var(--lav)));color:#fff;border-radius:18px 18px 5px 18px}
+.bubble-row.bot .msg{background:var(--card);border:1px solid var(--line);border-radius:18px 18px 18px 5px;box-shadow:0 2px 10px -6px rgba(20,20,40,.15)}
+.typing{display:inline-flex;gap:3px;padding:3px 2px}
+.typing i{width:6px;height:6px;border-radius:50%;background:var(--mute);animation:bl 1.2s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes bl{0%,60%,100%{transform:translateY(0);opacity:.5}30%{transform:translateY(-4px);opacity:1}}
+
+.card-sugg{align-self:center;max-width:88%;background:var(--teal-soft);border:1px solid color-mix(in srgb,var(--teal) 30%,transparent);
+  border-radius:16px;padding:12px 16px;font-size:14px;animation:rise .3s ease}
+.card-sugg b{color:var(--teal);display:block;margin-bottom:3px;font-size:13px}
+.card-crisis{align-self:center;max-width:88%;background:color-mix(in srgb,var(--bad) 10%,var(--card));
+  border:1px solid color-mix(in srgb,var(--bad) 35%,transparent);border-radius:16px;padding:12px 16px;font-size:14px;animation:rise .3s ease}
+.card-crisis b{color:var(--bad);display:block;margin-bottom:3px;font-size:13px}
+
+.composer{position:sticky;bottom:0;padding:12px 0 18px;background:linear-gradient(transparent,var(--bg) 30%)}
+.bar{display:flex;gap:9px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:999px;
+  padding:7px 8px 7px 18px;box-shadow:0 10px 36px -14px rgba(20,20,40,.3)}
+.bar input{flex:1;border:0;background:transparent;color:var(--ink);font:inherit;outline:none}
+.send,.mic{width:42px;height:42px;border-radius:50%;border:0;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none;transition:.15s}
+.send{background:linear-gradient(140deg,var(--teal),var(--lav));color:#fff}
+.send:disabled{opacity:.5}
+.send svg{width:18px;height:18px}
+.mic{background:var(--teal-soft);color:var(--teal)}
+.mic svg{width:19px;height:19px;stroke:currentColor}
+.mic.rec{background:var(--bad);color:#fff;animation:pulse 1.4s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--bad) 45%,transparent)}50%{box-shadow:0 0 0 12px transparent}}
+.hint{text-align:center;font-size:11.5px;color:var(--mute);margin-top:9px}
+.rec-timer{font-size:13px;color:var(--bad);font-weight:700;min-width:38px;text-align:center;display:none}
+
+.modal{position:fixed;inset:0;background:color-mix(in srgb,var(--bg) 70%,transparent);backdrop-filter:blur(8px);
+  display:flex;align-items:center;justify-content:center;z-index:50}
+.modal .box{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:30px;max-width:380px;width:92%;
+  text-align:center;box-shadow:0 30px 80px -20px rgba(10,10,30,.4)}
+.modal h2{font:500 24px var(--font-head);margin:12px 0 6px}
+.modal p{color:var(--mute);font-size:14px;margin:0 0 18px}
+.modal input{width:100%;padding:12px 15px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;margin-bottom:12px}
+.modal input:focus{outline:none;border-color:var(--teal)}
+.modal button{width:100%;padding:12px;border-radius:12px;border:0;background:linear-gradient(140deg,var(--teal),var(--lav));
+  color:#fff;font:700 15px var(--font-ui);cursor:pointer}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);
+  padding:9px 18px;border-radius:99px;font-size:13px;opacity:0;transition:.3s;pointer-events:none;z-index:60}
+.toast.show{opacity:.94}
+</style>
+</head>
+<body>
+<div class="modal" id="modal">
+  <div class="box">
+    <div class="mark" style="margin:auto;width:46px;height:46px;border-radius:14px"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:24px"><path d="M3 12h4l2 7 4-14 2 7h6"/></svg></div>
+    <h2>Bienvenue</h2>
+    <p>Cet espace vous accompagne entre deux rendez-vous. Parlez librement : votre médecin garde le fil, en toute confidentialité.</p>
+    <input type="text" id="nameInput" placeholder="Votre prénom et nom" maxlength="40">
+    <button id="startBtn">Commencer</button>
+  </div>
+</div>
+
+<div class="app">
+  <header>
+    <div class="brand">
+      <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2 7 4-14 2 7h6"/></svg></div>
+      <div><b>Mon espace</b><small id="whoami">—</small></div>
+    </div>
+    <a class="doc" href="/">← Accueil</a>
+  </header>
+
+  <div id="chat">
+    <div class="day-hello">
+      <h2>Comment ça va aujourd'hui ?</h2>
+      <p>Appuyez sur le micro et parlez, ou écrivez — comme ça vient.</p>
+    </div>
+  </div>
+
+  <div class="composer">
+    <div class="bar">
+      <input type="text" id="input" placeholder="Écrivez ici… ou appuyez sur le micro">
+      <span class="rec-timer" id="recTimer">0:00</span>
+      <button class="mic" id="micBtn" title="Parler">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 1 4 4v5a4 4 0 0 1-8 0V6a4 4 0 0 1 4-4z"/><path d="M19 11a7 7 0 0 1-14 0M12 18v4"/></svg>
+      </button>
+      <button class="send" id="sendBtn" title="Envoyer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+      </button>
+    </div>
+    <div class="hint">Espace confidentiel · ceci n'est pas un service d'urgence — en cas de danger : 3114 (24h/24)</div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+let sid = null, patientName = '';
+
+function toast(t){ const el=$('#toast'); el.textContent=t; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),2600); }
+async function api(path, body, raw){
+  const r = await fetch('/api/'+path, body ? {method:'POST', headers: raw?{}:{'Content-Type':'application/json'}, body: raw?body:JSON.stringify(body)} : {});
+  if(!r.ok) throw new Error((await r.text()).slice(0,120));
+  return r.json();
+}
+function add(role, text, typing=false){
+  const row=document.createElement('div'); row.className='bubble-row '+(role==='user'?'user':'bot');
+  const av=document.createElement('div'); av.className='avatar '+(role==='user'?'user':'bot');
+  av.textContent = role==='user' ? '🙂' : '✦';
+  const m=document.createElement('div'); m.className='msg';
+  if(typing) m.innerHTML='<span class="typing"><i></i><i></i><i></i></span>'; else m.textContent=text;
+  row.append(av,m); $('#chat').appendChild(row); $('#chat').scrollTop=1e9; return row;
+}
+function addCard(cls, title, text){
+  const d=document.createElement('div'); d.className=cls;
+  d.innerHTML=`<b>${title}</b>${text}`;
+  $('#chat').appendChild(d); $('#chat').scrollTop=1e9;
+}
+async function send(text){
+  text=(text||'').trim(); if(!text) return;
+  add('user', text); $('#input').value=''; $('#sendBtn').disabled=true;
+  const t=add('bot','',true);
+  try{
+    const r=await api('chat',{session_id:sid, message:text, patient_name:patientName});
+    sid=r.session_id; t.remove(); add('bot', r.reply);
+    for(const a of r.new_alerts||[]){
+      if(a.critical) addCard('card-crisis','Vous n\'êtes pas seul(e)', a.recommendation);
+      else addCard('card-sugg','💡 Une idée pour vous', a.recommendation);
+    }
+  }catch(e){ t.remove(); add('bot','Désolé, un souci technique… réessayez.'); console.error(e); }
+  $('#sendBtn').disabled=false;
+}
+
+// ---------------- audio recording -> 16 kHz WAV -> /api/transcribe ----------------
+let rec=null, recTimerIv=null;
+function fmtT(s){ return Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0'); }
+async function startRec(){
+  const stream = await navigator.mediaDevices.getUserMedia({audio:{channelCount:1, echoCancellation:true, noiseSuppression:true}});
+  const ac = new AudioContext();
+  const src = ac.createMediaStreamSource(stream);
+  const proc = ac.createScriptProcessor(4096,1,1);
+  const chunks=[];
+  proc.onaudioprocess = e => chunks.push(new Float32Array(e.inputBuffer.getChannelData(0)));
+  src.connect(proc); proc.connect(ac.destination);
+  rec={stream,ac,src,proc,chunks,t0:Date.now()};
+  $('#micBtn').classList.add('rec'); $('#recTimer').style.display='inline';
+  recTimerIv=setInterval(()=>{ $('#recTimer').textContent=fmtT((Date.now()-rec.t0)/1000); },250);
+}
+function encodeWAV(samples, sr){
+  const buf=new ArrayBuffer(44+samples.length*2), v=new DataView(buf);
+  const ws=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));};
+  ws(0,'RIFF'); v.setUint32(4,36+samples.length*2,true); ws(8,'WAVE'); ws(12,'fmt ');
+  v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
+  v.setUint32(24,sr,true); v.setUint32(28,sr*2,true); v.setUint16(32,2,true); v.setUint16(34,16,true);
+  ws(36,'data'); v.setUint32(40,samples.length*2,true);
+  for(let i=0;i<samples.length;i++){const s=Math.max(-1,Math.min(1,samples[i])); v.setInt16(44+i*2, s<0?s*0x8000:s*0x7FFF, true);}
+  return new Blob([buf],{type:'audio/wav'});
+}
+async function stopRec(){
+  clearInterval(recTimerIv); $('#micBtn').classList.remove('rec'); $('#recTimer').style.display='none';
+  const {stream,ac,src,proc,chunks}=rec; rec=null;
+  proc.disconnect(); src.disconnect(); stream.getTracks().forEach(t=>t.stop());
+  const srIn=ac.sampleRate; await ac.close();
+  let n=0; chunks.forEach(c=>n+=c.length);
+  if(n<srIn*0.4){ toast('Enregistrement trop court'); return; }
+  const flat=new Float32Array(n); let o=0; for(const c of chunks){flat.set(c,o); o+=c.length;}
+  const ratio=srIn/16000, m=Math.floor(flat.length/ratio), ds=new Float32Array(m);
+  for(let i=0;i<m;i++) ds[i]=flat[(i*ratio)|0];
+  const wav=encodeWAV(ds,16000);
+  const t=add('user','',true);
+  try{
+    const r=await fetch('/api/transcribe',{method:'POST',headers:{'Content-Type':'audio/wav'},body:wav});
+    if(!r.ok) throw new Error(await r.text());
+    const {text}=await r.json(); t.remove();
+    if(!text){ toast("Je n'ai rien entendu, réessayez"); return; }
+    send(text);
+  }catch(e){ t.remove(); toast('Transcription impossible'); console.error(e); }
+}
+$('#micBtn').onclick = async () => {
+  try{ rec ? await stopRec() : await startRec(); }
+  catch(e){ toast('Micro inaccessible — autorisez-le dans le navigateur'); console.error(e); }
+};
+
+$('#sendBtn').onclick = ()=>send($('#input').value);
+$('#input').onkeydown = e=>{ if(e.key==='Enter') send($('#input').value); };
+
+$('#startBtn').onclick = async ()=>{
+  patientName = $('#nameInput').value.trim() || 'Patient anonyme';
+  const r = await api('session',{patient_name:patientName});
+  sid = r.session_id;
+  $('#whoami').textContent = patientName;
+  $('#modal').remove();
+  fetch('/api/stt/warmup').catch(()=>{}); // preload Whisper in the background
+  $('#input').focus();
+};
+$('#nameInput').onkeydown = e=>{ if(e.key==='Enter') $('#startBtn').click(); };
+</script>
+</body>
+</html>
