@@ -15,8 +15,8 @@ uv run hackpsyassistant
 - **/patient** — chat patient : texte + **micro** (Whisper transcrit le français)
 - **/doctor** — file active, trajectoires par axe, alertes de seuil, rapport IA
 
-Deux patients de démonstration sont pré-chargés (Léa Martin — trajectoire qui se dégrade,
-Karim Benali — stable).
+Deux patients de démonstration sont pré-chargés (Léa — trajectoire qui se dégrade,
+Karim — stable).
 
 ## Architecture
 
